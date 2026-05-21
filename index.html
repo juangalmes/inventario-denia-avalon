@@ -1,0 +1,3710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario — Denia &amp; Avalon</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#F4F6F9;color:#222;font-size:13px}
+header{background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;padding:18px 28px;display:flex;align-items:center;gap:16px}
+header h1{font-size:20px;font-weight:700;letter-spacing:.5px}
+header span{font-size:12px;opacity:.8}
+.tabs{display:flex;gap:0;background:#fff;border-bottom:2px solid #1B5E20;padding:0 24px}
+.tab{padding:12px 28px;cursor:pointer;font-size:13px;font-weight:600;color:#555;border-bottom:3px solid transparent;transition:.2s;margin-bottom:-2px}
+.tab:hover{color:#1B5E20}
+.tab.active{color:#1B5E20;border-bottom-color:#1B5E20}
+.panel{display:none;padding:20px 24px}
+.panel.active{display:block}
+.kpi-row{display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.kpi{background:#fff;border-radius:8px;padding:14px 20px;min-width:130px;box-shadow:0 1px 4px rgba(0,0,0,.08);text-align:center}
+.kpi .val{font-size:26px;font-weight:700;color:#1B5E20}
+.kpi .lbl{font-size:11px;color:#888;margin-top:2px}
+.kpi.warn .val{color:#E65100}
+.kpi.zero .val{color:#C62828}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center}
+.filters label{font-size:12px;font-weight:600;color:#555;margin-right:4px}
+input.search{border:1px solid #ccc;border-radius:6px;padding:7px 12px;font-size:13px;width:240px;outline:none}
+input.search:focus{border-color:#1B5E20}
+.fbtn{border:1px solid #ccc;background:#f9f9f9;color:#444;border-radius:14px;padding:5px 13px;font-size:11px;cursor:pointer;transition:.15s;font-weight:600}
+.fbtn:hover,.fbtn.active{box-shadow:0 0 0 2px #1B5E20;transform:translateY(-1px)}
+.tbl-wrap{overflow-x:auto;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.08)}
+table{border-collapse:collapse;width:100%;background:#fff}
+thead tr th{background:#2E7D32;color:#fff;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.4px;white-space:nowrap;position:sticky;top:0;z-index:2}
+tbody tr{border-bottom:1px solid #EEEEEE}
+tbody tr:hover{background:#F1F8E9 !important}
+tbody tr td{padding:8px 12px;vertical-align:middle}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.warn{color:#E65100;font-weight:700}
+td.ok{color:#2E7D32;font-weight:700}
+td.zero{color:#C62828;font-weight:700}
+td.cod{font-family:monospace;font-size:12px;color:#555;white-space:nowrap}
+td.nombre{max-width:340px}
+td.marca{font-size:11px;color:#777;white-space:nowrap}
+td.partidas{font-size:11px;color:#777}
+td.periodo{font-size:11px;color:#555;white-space:nowrap}
+.hidden{display:none!important}
+.col-hidden{display:none!important}
+.cbtn{border:1px solid #ccc;background:#fff;color:#555;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600;transition:.15s}
+.cbtn.off{background:#FFEBEE;color:#C62828;border-color:#C62828;text-decoration:line-through}
+input.stock-input{width:70px;border:1px solid #ccc;border-radius:4px;padding:4px 6px;font-size:12px;text-align:right;background:#FFFDE7;outline:none}
+input.stock-input:focus{border-color:#F9A825;background:#FFF9C4}
+.col-hidden{display:none!important}
+.cbtn{border:1px solid #ccc;background:#fff;color:#555;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600;transition:.15s}
+.cbtn.off{background:#FFEBEE;color:#C62828;border-color:#C62828;text-decoration:line-through}
+input.stock-input{width:70px;border:1px solid #ccc;border-radius:4px;padding:4px 6px;font-size:12px;text-align:right;background:#FFFDE7;outline:none}
+input.stock-input:focus{border-color:#F9A825;background:#FFF9C4}
+.count-badge{background:#E8F5E9;color:#1B5E20;font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;margin-left:8px}
+.section-title{font-size:15px;font-weight:700;color:#1B5E20;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚓ Inventario de Materiales</h1>
+    <span>Almacén Denia (Almacén 19)  ·  Proyecto Avalon  ·  Mayo 2026</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('denia',this)">🏭 Almacén Denia <span class="count-badge">82</span></div>
+  <div class="tab" onclick="showTab('avalon',this)">🛥️ Proyecto Avalon <span class="count-badge">218</span></div>
+</div>
+
+<!-- ═══ DENIA PANEL ═══════════════════════════════════════════ -->
+<div id="panel-denia" class="panel active">
+  <div class="kpi-row">
+    <div class="kpi"><div class="val">82</div><div class="lbl">Referencias</div></div>
+    <div class="kpi warn"><div class="val">2</div><div class="lbl">Con retiradas</div></div>
+    <div class="kpi zero"><div class="val">2</div><div class="lbl">Sin stock</div></div>
+    <div class="kpi"><div class="val">9</div><div class="lbl">Familias</div></div>
+  </div>
+  <div class="filters">
+    <label>Buscar:</label>
+    <input class="search" id="search-denia" type="text" placeholder="Código o nombre…" oninput="filterSearch('denia')">
+    &nbsp;|&nbsp;
+    <button class="fbtn active" onclick="filterFam('denia','ALL',this)">Todas</button>
+<button class="fbtn" style="background:#D6E4FF;color:#1565C0;border-color:#1565C0" onclick="filterFam('denia','CINTAS',this)">CINTAS</button>
+<button class="fbtn" style="background:#F3E5F5;color:#6A1B9A;border-color:#6A1B9A" onclick="filterFam('denia','COBERTURAS',this)">COBERTURAS</button>
+<button class="fbtn" style="background:#FFE4CC;color:#BF360C;border-color:#BF360C" onclick="filterFam('denia','E.P.I.',this)">E.P.I.</button>
+<button class="fbtn" style="background:#FFF9C4;color:#827717;border-color:#827717" onclick="filterFam('denia','LIJA',this)">LIJA</button>
+<button class="fbtn" style="background:#E0F2F1;color:#004D40;border-color:#004D40" onclick="filterFam('denia','LIMPIEZA',this)">LIMPIEZA</button>
+<button class="fbtn" style="background:#FCE4EC;color:#880E4F;border-color:#880E4F" onclick="filterFam('denia','MASILLAS',this)">MASILLAS</button>
+<button class="fbtn" style="background:#E8F5E9;color:#1B5E20;border-color:#1B5E20" onclick="filterFam('denia','PINTURAS',this)">PINTURAS</button>
+<button class="fbtn" style="background:#EDE7F6;color:#311B92;border-color:#311B92" onclick="filterFam('denia','TAPADO',this)">TAPADO</button>
+<button class="fbtn" style="background:#FFF3E0;color:#BF360C;border-color:#BF360C" onclick="filterFam('denia','UTILES PINTURAS',this)">UTILES PINTURAS</button>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+  <div class="section-title">Stock actual Almacén 19 — Denia</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="save-indicator-denia" style="font-size:11px;color:#888"></span>
+    <button onclick="exportExcel('denia')" style="background:#1B5E20;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">⬇ Exportar Excel</button>
+  </div>
+</div>
+  <div class="tbl-wrap">
+    <table id="tbl-denia">
+      <thead><tr>
+        <th>FAMILIA</th><th>MARCA</th><th>CÓDIGO</th><th>NOMBRE DEL ARTÍCULO</th>
+        <th>STOCK INICIAL</th><th>RETIRADO</th><th>STOCK ACTUAL</th><th>RECUENTO</th>
+      </tr></thead>
+      <tbody>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">24424</td>
+  <td class="nombre">3M CINTA AMARILLA 25mmX50m (caja 36 rollos)</td>
+  <td class="num">108</td>
+  <td class="num">—</td>
+  <td class="num ok">108</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="24424" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">24448</td>
+  <td class="nombre">3M CINTA AMARILLA 50mmX50m (caja 24 rollos)</td>
+  <td class="num">96</td>
+  <td class="num">—</td>
+  <td class="num ok">96</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="24448" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">91912550</td>
+  <td class="nombre">3M CINTA DOBLE CARA PARA MOQUETAS 9191, BLANCO, 50MMX25M</td>
+  <td class="num">8</td>
+  <td class="num">—</td>
+  <td class="num ok">8</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="91912550" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN23348</td>
+  <td class="nombre">3M CINTA VERDE PREMIUM 233+48MMX55M</td>
+  <td class="num">24</td>
+  <td class="num">—</td>
+  <td class="num ok">24</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN23348" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="CINTAS" data-marca="TESA">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">TESA</td>
+  <td class="cod">04089-00106-06</td>
+  <td class="nombre">TESA CINTA EMBALAR MARRON 50X132 (caja 36 rollos)</td>
+  <td class="num">55</td>
+  <td class="num">—</td>
+  <td class="num ok">55</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="04089-00106-06" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="CINTAS" data-marca="TESA">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">TESA</td>
+  <td class="cod">04688-00021-00</td>
+  <td class="nombre">TESA CINTA TEJIDO NICHIBAN 50mmX50m (caja 18 rollos)</td>
+  <td class="num">128</td>
+  <td class="num">—</td>
+  <td class="num ok">128</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="04688-00021-00" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="COBERTURAS" data-marca="—">
+  <td style="background:#F3E5F5;color:#6A1B9A;font-weight:700">COBERTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">PUERTA</td>
+  <td class="nombre">PUERTA ACCESO COBERTURA BLANCA 0.90X1.80 ALTO</td>
+  <td class="num">1</td>
+  <td class="num">—</td>
+  <td class="num ok">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PUERTA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN06925</td>
+  <td class="nombre">3M 06925 FILTROS DE PARTICULAS P2R ( PAR)</td>
+  <td class="num">20</td>
+  <td class="num">—</td>
+  <td class="num ok">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN06925" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">6059</td>
+  <td class="nombre">3M 6059 FILTRO ABEK1 VAPORES ORGANICOS (CAJA 4 PARES)</td>
+  <td class="num">36</td>
+  <td class="num">—</td>
+  <td class="num ok">36</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6059" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">6942</td>
+  <td class="nombre">3M MASCARA C/FILTROS VAPORES Y PARTICULAS</td>
+  <td class="num">2</td>
+  <td class="num warn">1</td>
+  <td class="num ok">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6942" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">6300</td>
+  <td class="nombre">3M MEDIA MASCARA REUTILIZABLE</td>
+  <td class="num">4</td>
+  <td class="num">—</td>
+  <td class="num ok">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6300" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">H510A</td>
+  <td class="nombre">3M OREJERAS OPTIME I AMARILLA SNR 27dB</td>
+  <td class="num">6</td>
+  <td class="num">—</td>
+  <td class="num ok">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="H510A" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="—">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">—</td>
+  <td class="cod">5001820</td>
+  <td class="nombre">GAFAS PROTECCION VENTILACION INDIRECTA</td>
+  <td class="num">3</td>
+  <td class="num">—</td>
+  <td class="num ok">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="5001820" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="—">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">—</td>
+  <td class="cod">5000704</td>
+  <td class="nombre">GUANTES NITRILO GRIS T9 EN388</td>
+  <td class="num">20</td>
+  <td class="num">—</td>
+  <td class="num ok">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="5000704" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="SECUTEX">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">SECUTEX</td>
+  <td class="cod">30444-90</td>
+  <td class="nombre">SECUTEX MONO XL</td>
+  <td class="num">104</td>
+  <td class="num">—</td>
+  <td class="num ok">104</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="30444-90" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="VENFILTER">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">VENFILTER</td>
+  <td class="cod">VSB150-1/25</td>
+  <td class="nombre">VENFILTER FILTRO G3 MED. SINT. VSB-150 1X25M. GRUESO 55%</td>
+  <td class="num">50</td>
+  <td class="num">—</td>
+  <td class="num ok">50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="VSB150-1/25" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="VENFILTER">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">VENFILTER</td>
+  <td class="cod">VSB200-1/25</td>
+  <td class="nombre">VENFILTER FILTRO G4 MED. SINT. VSB-200 1X25M GRUESO 60%</td>
+  <td class="num">25</td>
+  <td class="num">—</td>
+  <td class="num ok">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="VSB200-1/25" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="E.P.I." data-marca="WURTH">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">899470371</td>
+  <td class="nombre">WURTH GUANTES DESECH. NITRILO NEGRO L (caja 100)</td>
+  <td class="num">4</td>
+  <td class="num">—</td>
+  <td class="num ok">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="899470371" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50451</td>
+  <td class="nombre">3M DISCO HOOKIT P 320 15 AGUJ 150 MM 288U</td>
+  <td class="num">600</td>
+  <td class="num">—</td>
+  <td class="num ok">600</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50451" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">AB55592</td>
+  <td class="nombre">3M HOOKIT DISCO DE PAPEL 236U, P180 C-WEIGHT, 6in x NH, DIE 600Z, 50/CARTON, 250</td>
+  <td class="num">700</td>
+  <td class="num">—</td>
+  <td class="num ok">700</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="AB55592" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">AB55588</td>
+  <td class="nombre">3M HOOKIT DISCO DE PAPEL 236U, P80 C-WEIGHT, 6 in X NH, DIE 600Z, 50/PAC, 250</td>
+  <td class="num">50</td>
+  <td class="num">—</td>
+  <td class="num ok">50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="AB55588" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50337</td>
+  <td class="nombre">3M ROLLO ABRASIVO C/ESPONJA P400, 114mmX25m (x metro)</td>
+  <td class="num">110</td>
+  <td class="num">—</td>
+  <td class="num ok">110</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50337" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN61079</td>
+  <td class="nombre">3M ROLLO ABRASIVO P120, HOOKIT 255P, 115mmX25m</td>
+  <td class="num">25</td>
+  <td class="num">—</td>
+  <td class="num ok">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN61079" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN61077</td>
+  <td class="nombre">3M ROLLO ABRASIVO P180, 255P, HOOKIT 115MMX25M</td>
+  <td class="num">25</td>
+  <td class="num">—</td>
+  <td class="num ok">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN61077" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN44398</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO, P120, 288U, 115mmX50m</td>
+  <td class="num">25</td>
+  <td class="num">—</td>
+  <td class="num ok">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN44398" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN44396</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO, P180, 288U, 115mmX50m</td>
+  <td class="num">25</td>
+  <td class="num">—</td>
+  <td class="num ok">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN44396" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN44400</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO, P80, 288U (115mmx50m)</td>
+  <td class="num">25</td>
+  <td class="num">—</td>
+  <td class="num ok">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN44400" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">AVFDF</td>
+  <td class="nombre">3M SCOTCH-BRITE ROJO DURABLE FLEX MX-HP A VFN</td>
+  <td class="num">175</td>
+  <td class="num">—</td>
+  <td class="num ok">175</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="AVFDF" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="FESTOOL">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">FESTOOL</td>
+  <td class="cod">29-203348</td>
+  <td class="nombre">FESTOOL INTERFACE 5MM D150/17 MJ-S2</td>
+  <td class="num">1</td>
+  <td class="num">—</td>
+  <td class="num ok">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="29-203348" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIJA" data-marca="SMIRDEX">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">SMIRDEX</td>
+  <td class="cod">820412080</td>
+  <td class="nombre">SMIRDEX 820 ROLLO LIJA P80 115MM (XMETRO)</td>
+  <td class="num">25</td>
+  <td class="num">—</td>
+  <td class="num ok">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="820412080" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="3M">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN08984</td>
+  <td class="nombre">3M LIMPIADOR DE ADHESIVOS DE USO GENERAL 1L</td>
+  <td class="num">3</td>
+  <td class="num">—</td>
+  <td class="num ok">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN08984" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="3M">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN09660</td>
+  <td class="nombre">3M PAÑO ANTIESTATICO BLANCO, 320MMX400MM (UD)</td>
+  <td class="num">60</td>
+  <td class="num">—</td>
+  <td class="num ok">60</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN09660" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="SONTARA">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">SONTARA</td>
+  <td class="cod">01/4542</td>
+  <td class="nombre">BAYETA DESENGRASANTE SONTARA PAQ. 200 UDS (PA)</td>
+  <td class="num">25</td>
+  <td class="num">—</td>
+  <td class="num ok">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="01/4542" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="ZVG">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">ZVG</td>
+  <td class="cod">1029101</td>
+  <td class="nombre">BAYETA MICROFIBRA AZUL 40X40CM ZVG</td>
+  <td class="num">120</td>
+  <td class="num">—</td>
+  <td class="num ok">120</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="1029101" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="ZVG">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">ZVG</td>
+  <td class="cod">1029301</td>
+  <td class="nombre">BAYETA MICROFIBRA VERDE ZVG</td>
+  <td class="num">60</td>
+  <td class="num">—</td>
+  <td class="num ok">60</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="1029301" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="NAUTI CHANDLER">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">NAUTI CHANDLER</td>
+  <td class="cod">10750</td>
+  <td class="nombre">ESPATULAS DE CARROCERO INOX SET 4UDS (NAUTI</td>
+  <td class="num">6</td>
+  <td class="num">—</td>
+  <td class="num ok">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="10750" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="NAUTI CHANDLER">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">NAUTI CHANDLER</td>
+  <td class="cod">51020</td>
+  <td class="nombre">NAUTI CLEANER 5L (LITROS) (NAUTI CHANDLER)</td>
+  <td class="num">2</td>
+  <td class="num">—</td>
+  <td class="num ok">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="51020" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">2</td>
+  <td class="nombre">PAPEL DE SECAR (BOBINA MEDIANA)</td>
+  <td class="num">4</td>
+  <td class="num">—</td>
+  <td class="num ok">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="2" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="MASILLAS" data-marca="EPIFANES">
+  <td style="background:#FCE4EC;color:#880E4F;font-weight:700">MASILLAS</td>
+  <td class="marca">EPIFANES</td>
+  <td class="cod">3314</td>
+  <td class="nombre">EPIFANES MASILLA FIBRA VIDRIO POLYESTER 1,5KG</td>
+  <td class="num">4</td>
+  <td class="num">—</td>
+  <td class="num ok">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="3314" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="—">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">10072</td>
+  <td class="nombre">ALCOHOL 96º 1 L</td>
+  <td class="num">4</td>
+  <td class="num">—</td>
+  <td class="num ok">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="10072" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R4042GA</td>
+  <td class="nombre">ALEXSEAL R4042 EPOXY PRIMER REDUCER GAL</td>
+  <td class="num">4</td>
+  <td class="num">—</td>
+  <td class="num ok">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R4042GA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">F8063GA</td>
+  <td class="nombre">AWLCRAFT 2000 F8063 SNOW WHITE GAL</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num zero">—</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="F8063GA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">73012QT</td>
+  <td class="nombre">AWLGRIP 73012 ANTIDESLIZANTE GRIPTEX FINE QT</td>
+  <td class="num">4,50</td>
+  <td class="num">—</td>
+  <td class="num ok">4,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="73012QT" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">73013QT</td>
+  <td class="nombre">AWLGRIP 73013 ANTIDESLIZANTE GRIPTEX COARSE QT</td>
+  <td class="num">4,50</td>
+  <td class="num">—</td>
+  <td class="num ok">4,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="73013QT" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">A1801</td>
+  <td class="nombre">AWLGRIP A1801 AEROWAVE FILLER 2501 290ML BASE</td>
+  <td class="num">3</td>
+  <td class="num">—</td>
+  <td class="num ok">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="A1801" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">A1802</td>
+  <td class="nombre">AWLGRIP A1802 AEROWAVE CURING SOLUTION 6009</td>
+  <td class="num">3</td>
+  <td class="num">—</td>
+  <td class="num ok">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="A1802" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">G3010GA</td>
+  <td class="nombre">AWLGRIP G3010 AWLCAT 2 TOPCOAT SPRAY CONVERTER GAL</td>
+  <td class="num">4</td>
+  <td class="num">—</td>
+  <td class="num ok">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="G3010GA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">T340-5LT</td>
+  <td class="nombre">AWLGRIP T340 LIMPIADOR/DESENGR. SURFACE CLEANER 5L</td>
+  <td class="num">4</td>
+  <td class="num">—</td>
+  <td class="num ok">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="T340-5LT" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="BOERO">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">BOERO</td>
+  <td class="cod">BO656001A</td>
+  <td class="nombre">BOERO EPOLIGHT WIN 15LT MASILLA EPOXY</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num zero">—</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="BO656001A" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="BOERO">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">BOERO</td>
+  <td class="cod">6040014</td>
+  <td class="nombre">BOERO EPOMAR EPOXY FILLER FOR PROFILING 4LT</td>
+  <td class="num">1</td>
+  <td class="num">—</td>
+  <td class="num ok">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6040014" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="BOERO">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">BOERO</td>
+  <td class="cod">64-B7006032610</td>
+  <td class="nombre">BOERO EPOYACHT KIT 20L (A+B)</td>
+  <td class="num">1</td>
+  <td class="num">—</td>
+  <td class="num ok">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="64-B7006032610" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">6PVS17CPA</td>
+  <td class="nombre">JOTUN MEGAGLOSS AC AURIGA WHITE A 2.4L</td>
+  <td class="num">3,50</td>
+  <td class="num">—</td>
+  <td class="num ok">3,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6PVS17CPA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">6PVPGAX02</td>
+  <td class="nombre">JOTUN MEGAGLOSS AC B.1 STD0967 DELPHINUS GREY 3.62LT</td>
+  <td class="num">2</td>
+  <td class="num">—</td>
+  <td class="num ok">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6PVPGAX02" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">6PVCPBARA</td>
+  <td class="nombre">JOTUN MEGAGLOSS AC COMP. B 0.6L</td>
+  <td class="num">36</td>
+  <td class="num">—</td>
+  <td class="num ok">36</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6PVCPBARA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">6PV2C2CPA</td>
+  <td class="nombre">JOTUN MEGAGLOSS AC LUPUS BLACK 2.4LT</td>
+  <td class="num">0,50</td>
+  <td class="num">—</td>
+  <td class="num ok">0,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6PV2C2CPA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">11000019</td>
+  <td class="nombre">JOTUN MEGAPRIMER COMP.A WHITE 4LTS</td>
+  <td class="num">2</td>
+  <td class="num">—</td>
+  <td class="num ok">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="11000019" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">0PRCPBBVA</td>
+  <td class="nombre">JOTUN MEGAPRIMER COMP.B 1LT</td>
+  <td class="num">3,50</td>
+  <td class="num">—</td>
+  <td class="num ok">3,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0PRCPBBVA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">0X3001EVA</td>
+  <td class="nombre">JOTUN MEGAPRIMER LITE WHITE PARRT A 4LT</td>
+  <td class="num">3,50</td>
+  <td class="num">—</td>
+  <td class="num ok">3,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0X3001EVA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">092217FVA</td>
+  <td class="nombre">JOTUN THINNER Nº17 5LT</td>
+  <td class="num">2,50</td>
+  <td class="num">—</td>
+  <td class="num ok">2,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="092217FVA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">092218FVA</td>
+  <td class="nombre">JOTUN THINNER Nº18 5L (LENTA EVAPORACIÓN VERANO)</td>
+  <td class="num">4,50</td>
+  <td class="num">—</td>
+  <td class="num ok">4,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="092218FVA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="JOTUN">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">JOTUN</td>
+  <td class="cod">092219FVA</td>
+  <td class="nombre">JOTUN THINNER Nº19 5LT</td>
+  <td class="num">12,25</td>
+  <td class="num">—</td>
+  <td class="num ok">12,25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="092219FVA" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN06283</td>
+  <td class="nombre">3M PAPEL ENMASCARAR, 900MMX365.76M (ROLLO)</td>
+  <td class="num">0,75</td>
+  <td class="num">—</td>
+  <td class="num ok">0,75</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN06283" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="FENDWRAP">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">FENDWRAP</td>
+  <td class="cod">PF5722-1</td>
+  <td class="nombre">FENDWRAP MARINE PROTECTION</td>
+  <td class="num">8</td>
+  <td class="num">—</td>
+  <td class="num ok">8</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PF5722-1" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="—">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">—</td>
+  <td class="cod">20007740</td>
+  <td class="nombre">FUNDA PARA CUBETA PLASTICO 18CM (E)</td>
+  <td class="num">19</td>
+  <td class="num">—</td>
+  <td class="num ok">19</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="20007740" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="JUNPLAST">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">JUNPLAST</td>
+  <td class="cod">PNAT5X200G200U</td>
+  <td class="nombre">JUNPLAST PLÁSTICO NATURAL 5X200MT G/200</td>
+  <td class="num">0,25</td>
+  <td class="num">—</td>
+  <td class="num ok">0,25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PNAT5X200G200U" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="JUNPLAST">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">JUNPLAST</td>
+  <td class="cod">PNAT6X60G600U</td>
+  <td class="nombre">JUNPLAST PLÁSTICO NATURAL 6X60MT G/600</td>
+  <td class="num">0,50</td>
+  <td class="num">—</td>
+  <td class="num ok">0,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PNAT6X60G600U" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">COVER1</td>
+  <td class="nombre">LAMINA PROTECCION FR PROPLEX 3MMX1MX2M</td>
+  <td class="num">23</td>
+  <td class="num">—</td>
+  <td class="num ok">23</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="COVER1" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="SIFA">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">SIFA</td>
+  <td class="cod">950</td>
+  <td class="nombre">SIFA GRANADA 10X10</td>
+  <td class="num">120</td>
+  <td class="num warn">70</td>
+  <td class="num ok">50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="950" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="SIFA">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">SIFA</td>
+  <td class="cod">2785</td>
+  <td class="nombre">SIFA TRAPO BLANCO ALGODON (SABANA) CAJA 10 KG</td>
+  <td class="num">30</td>
+  <td class="num">—</td>
+  <td class="num ok">30</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="2785" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="WURTH">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">818000180</td>
+  <td class="nombre">WURTH PAINT-MASK-EVO-A180CM-L22.5MT</td>
+  <td class="num">23</td>
+  <td class="num">—</td>
+  <td class="num ok">23</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="818000180" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="WURTH">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">818000261</td>
+  <td class="nombre">WURTH PAINT-MASK-EVO-A260CM-L22.5MT</td>
+  <td class="num">11</td>
+  <td class="num">—</td>
+  <td class="num ok">11</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="818000261" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="WURTH">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">818000035</td>
+  <td class="nombre">WURTH PAINT-MASK-EVO-A35CM-L22.5MT</td>
+  <td class="num">71</td>
+  <td class="num">—</td>
+  <td class="num ok">71</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="818000035" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="TAPADO" data-marca="WURTH">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">818000060</td>
+  <td class="nombre">WURTH PAINT-MASK-EVO-A60CM-L22.5MT</td>
+  <td class="num">35</td>
+  <td class="num">—</td>
+  <td class="num ok">35</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="818000060" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">6900</td>
+  <td class="nombre">3M MÁSCARA COMPLETA SERIE 6000 TAMAÑO GRANDE</td>
+  <td class="num">12</td>
+  <td class="num">—</td>
+  <td class="num ok">12</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6900" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50405</td>
+  <td class="nombre">3M VASO DE MEZCLA, 2.300ml</td>
+  <td class="num">5</td>
+  <td class="num">—</td>
+  <td class="num ok">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50405" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50402</td>
+  <td class="nombre">3M VASO DE MEZCLA, 365ml</td>
+  <td class="num">5</td>
+  <td class="num">—</td>
+  <td class="num ok">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50402" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50403</td>
+  <td class="nombre">3M VASO DE MEZCLA, 870ml</td>
+  <td class="num">9</td>
+  <td class="num">—</td>
+  <td class="num ok">9</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50403" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">40311</td>
+  <td class="nombre">DEPRESORES 100 U/CAJA (Precio unit)</td>
+  <td class="num">300</td>
+  <td class="num">—</td>
+  <td class="num ok">300</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="40311" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">19015012</td>
+  <td class="nombre">PALETINA DOBLE Nº12</td>
+  <td class="num">6</td>
+  <td class="num">—</td>
+  <td class="num ok">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="19015012" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">20007608</td>
+  <td class="nombre">RODILLO ESPUMA MARRON 11 CM.</td>
+  <td class="num">10</td>
+  <td class="num">—</td>
+  <td class="num ok">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="20007608" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="WURTH">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">695770002</td>
+  <td class="nombre">WURTH CUBO MICROABSORBER 25L</td>
+  <td class="num">10</td>
+  <td class="num">—</td>
+  <td class="num ok">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="695770002" oninput="saveRecuento('denia',this)"></td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="WURTH">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">818000125</td>
+  <td class="nombre">WURTH PAINT MASCK EVO 1.20 - 22.5MT</td>
+  <td class="num">32</td>
+  <td class="num">—</td>
+  <td class="num ok">32</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="818000125" oninput="saveRecuento('denia',this)"></td>
+</tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ AVALON PANEL ══════════════════════════════════════════ -->
+<div id="panel-avalon" class="panel">
+  <div class="kpi-row">
+    <div class="kpi"><div class="val">218</div><div class="lbl">Referencias</div></div>
+    <div class="kpi"><div class="val">11</div><div class="lbl">Familias</div></div>
+    <div class="kpi"><div class="val">6</div><div class="lbl">Partidas</div></div>
+    <div class="kpi"><div class="val">nov 25<br>may 26</div><div class="lbl">Periodo</div></div>
+  </div>
+  <div class="filters">
+    <label>Buscar:</label>
+    <input class="search" id="search-avalon" type="text" placeholder="Código o nombre…" oninput="filterSearch('avalon')">
+    &nbsp;|&nbsp;
+    <label>Columnas:</label>
+    <button class="cbtn" id="btn-coste" onclick="toggleCol('col-coste','btn-coste')">Coste</button>
+    <button class="cbtn" id="btn-venta" onclick="toggleCol('col-venta','btn-venta')">Venta</button>
+    <button class="cbtn" id="btn-partidas" onclick="toggleCol('col-partidas','btn-partidas')">Partidas</button>
+    &nbsp;|&nbsp;
+    <button class="fbtn active" onclick="filterFam('avalon','ALL',this)">Todas</button>
+<button class="fbtn" style="background:#D6E4FF;color:#1565C0;border-color:#1565C0" onclick="filterFam('avalon','CINTAS',this)">CINTAS</button>
+<button class="fbtn" style="background:#F3E5F5;color:#6A1B9A;border-color:#6A1B9A" onclick="filterFam('avalon','COBERTURAS',this)">COBERTURAS</button>
+<button class="fbtn" style="background:#FFE4CC;color:#BF360C;border-color:#BF360C" onclick="filterFam('avalon','E.P.I.',this)">E.P.I.</button>
+<button class="fbtn" style="background:#FBE9E7;color:#BF360C;border-color:#BF360C" onclick="filterFam('avalon','ESPATULAS',this)">ESPATULAS</button>
+<button class="fbtn" style="background:#FFF9C4;color:#827717;border-color:#827717" onclick="filterFam('avalon','LIJA',this)">LIJA</button>
+<button class="fbtn" style="background:#E0F2F1;color:#004D40;border-color:#004D40" onclick="filterFam('avalon','LIMPIEZA',this)">LIMPIEZA</button>
+<button class="fbtn" style="background:#ECEFF1;color:#37474F;border-color:#37474F" onclick="filterFam('avalon','MAQUINARIA',this)">MAQUINARIA</button>
+<button class="fbtn" style="background:#FCE4EC;color:#880E4F;border-color:#880E4F" onclick="filterFam('avalon','MASILLAS',this)">MASILLAS</button>
+<button class="fbtn" style="background:#E8F5E9;color:#1B5E20;border-color:#1B5E20" onclick="filterFam('avalon','PINTURAS',this)">PINTURAS</button>
+<button class="fbtn" style="background:#EDE7F6;color:#311B92;border-color:#311B92" onclick="filterFam('avalon','TAPADO',this)">TAPADO</button>
+<button class="fbtn" style="background:#FFF3E0;color:#BF360C;border-color:#BF360C" onclick="filterFam('avalon','UTILES PINTURAS',this)">UTILES PINTURAS</button>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+  <div class="section-title">Materiales consumidos — Proyecto Avalon</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="save-indicator-avalon" style="font-size:11px;color:#888"></span>
+    <button onclick="exportExcel('avalon')" style="background:#1565C0;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">⬇ Exportar Excel</button>
+  </div>
+</div>
+  <div class="tbl-wrap">
+    <table id="tbl-avalon">
+      <thead><tr>
+        <th>FAMILIA</th><th>MARCA</th><th>CÓDIGO</th><th>NOMBRE DEL ARTÍCULO</th>
+        <th>STOCK INICIAL<br><span style="font-weight:400;font-size:10px;opacity:.8">(Cant. total)</span></th><th>RECUENTO</th><th class="col-coste">COSTE (€)</th><th class="col-venta">VENTA (€)</th><th class="col-partidas">PARTIDAS</th><th>PERÍODO</th>
+      </tr></thead>
+      <tbody>
+<tr data-fam="CINTAS" data-marca="TESA">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">TESA</td>
+  <td class="cod">04688</td>
+  <td class="nombre">00021-00 - TESA CINTA TEJIDO NICHIBAN 50mmX50m (caja 18 rollos)</td>
+  <td class="num">347</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="04688" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.307,86</td>
+  <td class="col-venta num">1.735,55</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004, 2.065</td>
+  <td class="periodo">25/11/2025 → 07/04/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="TESA">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">TESA</td>
+  <td class="cod">04089</td>
+  <td class="nombre">00106-06 - TESA CINTA EMBALAR MARRON 50X132 (caja 36 rollos)</td>
+  <td class="num">508</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="04089" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">781,98</td>
+  <td class="col-venta num">664,28</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004, 2.065</td>
+  <td class="periodo">02/12/2025 → 20/04/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN09678</td>
+  <td class="nombre">3M BURLETE ENMASCARADO 13mm</td>
+  <td class="num">13</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN09678" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">385,60</td>
+  <td class="col-venta num">756,19</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004, 2.065</td>
+  <td class="periodo">25/11/2025 → 11/05/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">24424</td>
+  <td class="nombre">3M CINTA AMARILLA 25mmX50m (caja 36 rollos)</td>
+  <td class="num">161</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="24424" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">714,06</td>
+  <td class="col-venta num">714,06</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 11/05/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">24448</td>
+  <td class="nombre">3M CINTA AMARILLA 50mmX50m (caja 24 rollos)</td>
+  <td class="num">158</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="24448" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.568,76</td>
+  <td class="col-venta num">1.493,02</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 20/04/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">91912550</td>
+  <td class="nombre">3M CINTA DOBLE CARA PARA MOQUETAS 9191, BLANCO, 50MMX25M</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="91912550" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">54,36</td>
+  <td class="col-venta num">54,36</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">03/12/2025 → 03/02/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">03/0023318</td>
+  <td class="nombre">3M CINTA VERDE PREMIUM 233+ 18MMX55M (48 X CAJA)</td>
+  <td class="num">69</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="03/0023318" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">109,91</td>
+  <td class="col-venta num">109,91</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">02/12/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN23348</td>
+  <td class="nombre">3M CINTA VERDE PREMIUM 233+48MMX55M</td>
+  <td class="num">394</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN23348" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.648,06</td>
+  <td class="col-venta num">1.648,06</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 1.003.004, 2.065</td>
+  <td class="periodo">25/11/2025 → 11/05/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN06282</td>
+  <td class="nombre">3M PAPEL ENMASCARAR 60CMX366M</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN06282" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">135,60</td>
+  <td class="col-venta num">131,38</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">17/11/2025 → 03/02/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN06283</td>
+  <td class="nombre">3M PAPEL ENMASCARAR, 900MMX365.76M (ROLLO)</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN06283" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">393,38</td>
+  <td class="col-venta num">393,25</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="3M">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN06311</td>
+  <td class="nombre">3M SCOTCH CINTA ENMASCARAR 2328 36MMX50M (caja 24 roll)</td>
+  <td class="num">303</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN06311" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">658,10</td>
+  <td class="col-venta num">496,01</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 2.065</td>
+  <td class="periodo">25/11/2025 → 20/04/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="TESA">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">TESA</td>
+  <td class="cod">33/012</td>
+  <td class="nombre">TESA CINTA PERFILAR ROJA 12MM</td>
+  <td class="num">36</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="33/012" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">162</td>
+  <td class="col-venta num">663,62</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004, 2.065</td>
+  <td class="periodo">02/12/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="CINTAS" data-marca="WURTH">
+  <td style="background:#D6E4FF;color:#1565C0;font-weight:700">CINTAS</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">099250250</td>
+  <td class="nombre">WURTH CINTA ALUMINIO GRIS 50mm X 50m</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="099250250" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">45,54</td>
+  <td class="col-venta num">45,51</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="COBERTURAS" data-marca="—">
+  <td style="background:#F3E5F5;color:#6A1B9A;font-weight:700">COBERTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">PUERTA</td>
+  <td class="nombre">PUERTA ACCESO COBERTURA BLANCA 0.90X1.80 ALTO</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PUERTA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">85,27</td>
+  <td class="col-venta num">85,27</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN06925</td>
+  <td class="nombre">3M 06925 FILTROS DE PARTICULAS P2R ( PAR)</td>
+  <td class="num">160</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN06925" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.019,96</td>
+  <td class="col-venta num">1.019,96</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">25/11/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">6059</td>
+  <td class="nombre">3M 6059 FILTRO ABEK1 VAPORES ORGANICOS (CAJA 4 PARES)</td>
+  <td class="num">151</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6059" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.045,12</td>
+  <td class="col-venta num">1.595,03</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">25/11/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">50411</td>
+  <td class="nombre">3M FILTRO PAPEL CÓNICO 190 MICRAS</td>
+  <td class="num">205</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="50411" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">29,52</td>
+  <td class="col-venta num">29,52</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 07/04/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">50412</td>
+  <td class="nombre">3M FILTRO PAPEL CÓNICOS 125 MICRAS</td>
+  <td class="num">203</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="50412" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">29,23</td>
+  <td class="col-venta num">31,26</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 07/04/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">6900</td>
+  <td class="nombre">3M MÁSCARA COMPLETA SERIE 6000 TAMAÑO GRANDE</td>
+  <td class="num">16</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6900" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.838,84</td>
+  <td class="col-venta num">2.083,62</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">25/11/2025 → 20/03/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">H510A</td>
+  <td class="nombre">3M OREJERAS OPTIME I AMARILLA SNR 27dB</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="H510A" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">86,79</td>
+  <td class="col-venta num">86,79</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">H540A</td>
+  <td class="nombre">3M OREJERAS P/PROTECCION AUDITIVA OPTIME III ROJA SNR 35DB</td>
+  <td class="num">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="H540A" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">83,42</td>
+  <td class="col-venta num">83,41</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN501</td>
+  <td class="nombre">3M RETENEDOR DE FILTROS (PACK 2uds)</td>
+  <td class="num">15</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN501" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">55,59</td>
+  <td class="col-venta num">53,97</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">25/11/2025 → 20/03/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">D8059</td>
+  <td class="nombre">3M SECURE CLICK D8059 FILTRO PARA GASES, VAPORES Y PARTICULAS</td>
+  <td class="num">16</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D8059" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">281,60</td>
+  <td class="col-venta num">281,60</td>
+  <td class="col-partidas partidas">1.002.006, 1.003.004</td>
+  <td class="periodo">19/02/2026 → 01/04/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="3M">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">3M</td>
+  <td class="cod">D7925</td>
+  <td class="nombre">3M SECURE CLICK FILTRO DE PARTICULAS P2 R 1 (BOLSA 4UND)</td>
+  <td class="num">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D7925" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">139,38</td>
+  <td class="col-venta num">139,38</td>
+  <td class="col-partidas partidas">1.002.006, 1.003.004</td>
+  <td class="periodo">19/02/2026 → 24/04/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="SECUTEX">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">SECUTEX</td>
+  <td class="cod">30444</td>
+  <td class="nombre">90 - SECUTEX MONO XL</td>
+  <td class="num">346</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="30444" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">752,90</td>
+  <td class="col-venta num">987,48</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 1.003.004, 2.065</td>
+  <td class="periodo">25/11/2025 → 27/04/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="—">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">—</td>
+  <td class="cod">YA580A</td>
+  <td class="nombre">BLUE POINT CUTTER 9MM</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="YA580A" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">25,88</td>
+  <td class="col-venta num">25,88</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="—">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">—</td>
+  <td class="cod">05001820</td>
+  <td class="nombre">GAFAS PROTECCION VENTILACION INDIRECTA</td>
+  <td class="num">12</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="05001820" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">45,18</td>
+  <td class="col-venta num">12,77</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="—">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">—</td>
+  <td class="cod">05000720</td>
+  <td class="nombre">GUANTES NITRILO GRIS T 10 EN 388</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="05000720" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">15,76</td>
+  <td class="col-venta num">15,76</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="—">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">—</td>
+  <td class="cod">05000704</td>
+  <td class="nombre">GUANTES NITRILO GRIS T9 EN388</td>
+  <td class="num">30</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="05000704" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">22,44</td>
+  <td class="col-venta num">22,11</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025 → 02/12/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="—">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">—</td>
+  <td class="cod">27150</td>
+  <td class="nombre">HOJA RECAMBIO CUTTER 18 MM 10 U (N. CHAND)</td>
+  <td class="num">7</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="27150" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">28,08</td>
+  <td class="col-venta num">28,08</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="SECUTEX">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">SECUTEX</td>
+  <td class="cod">Z11680</td>
+  <td class="nombre">SECUTEX CUBREZAPATOS PRO CE0624 SIN SUELA (PAR)</td>
+  <td class="num">500</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="Z11680" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">146,80</td>
+  <td class="col-venta num">93,30</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006</td>
+  <td class="periodo">10/02/2026 → 19/02/2026</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="—">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">—</td>
+  <td class="cod">0100002</td>
+  <td class="nombre">TRAJE DE AGUA</td>
+  <td class="num">8</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0100002" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">149,38</td>
+  <td class="col-venta num">149,41</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="E.P.I." data-marca="WURTH">
+  <td style="background:#FFE4CC;color:#BF360C;font-weight:700">E.P.I.</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">0899470371</td>
+  <td class="nombre">WURTH GUANTES DESECH. NITRILO NEGRO L (caja 100)</td>
+  <td class="num">95</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0899470371" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">766,68</td>
+  <td class="col-venta num">472,47</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 1.003.004, 2.065</td>
+  <td class="periodo">11/12/2025 → 13/04/2026</td>
+</tr>
+<tr data-fam="ESPATULAS" data-marca="SCRAPERITE">
+  <td style="background:#FBE9E7;color:#BF360C;font-weight:700">ESPATULAS</td>
+  <td class="marca">SCRAPERITE</td>
+  <td class="cod">SRC30MBL</td>
+  <td class="nombre">SCRAPERITE RECAMBIOS CUCHILLAS - PACK 30 UDS - AZUL</td>
+  <td class="num">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="SRC30MBL" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">4,92</td>
+  <td class="col-venta num">4,92</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">09/03/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="FESTOOL">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">FESTOOL</td>
+  <td class="cod">29</td>
+  <td class="nombre">203348 - FESTOOL INTERFACE 5MM D150/17 MJ-S2</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="29" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">47,17</td>
+  <td class="col-venta num">58,96</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN31370</td>
+  <td class="nombre">3M CUBITRON II HOOKIT DISCO ABRASIVO 737U, 150mm, MULTIAGUJEROS, 40+</td>
+  <td class="num">325</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN31370" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">233,03</td>
+  <td class="col-venta num">233,03</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025 → 02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN51369</td>
+  <td class="nombre">3M CUBITRON II HOOKIT DISCO ABRASIVO 737U, 80+, 150MM MULTIAGUJEROS</td>
+  <td class="num">50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN51369" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">35,85</td>
+  <td class="col-venta num">35,85</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">01/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN51428</td>
+  <td class="nombre">3M DISCO ABRASIVO CUBITRON II HOOKIT, P400, 737U</td>
+  <td class="num">1.150</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN51428" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">884,86</td>
+  <td class="col-venta num">855,45</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">27/03/2026 → 01/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50447</td>
+  <td class="nombre">3M DISCO ABRASIVO HOOKIT, P180, 255P+, 150mm (caja 100uds)</td>
+  <td class="num">200</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50447" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">56,40</td>
+  <td class="col-venta num">56,40</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">16/03/2026 → 23/03/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50443</td>
+  <td class="nombre">3M DISCO ABRASIVO HOOKIT, P80, 255P+, 150MM (caja 100)</td>
+  <td class="num">200</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50443" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">52,80</td>
+  <td class="col-venta num">52,80</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">16/03/2026 → 23/03/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50451</td>
+  <td class="nombre">3M DISCO HOOKIT P 320 15 AGUJ 150 MM 288U</td>
+  <td class="num">1.500</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50451" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">423</td>
+  <td class="col-venta num">423</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50453</td>
+  <td class="nombre">3M DISCO HOOKIT, P400, 255P+, 150MM, 15</td>
+  <td class="num">310</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50453" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">87,42</td>
+  <td class="col-venta num">88,35</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">09/03/2026 → 27/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50341</td>
+  <td class="nombre">3M DISCO TRIZACT ABRASIVO DE ACABADO P1000, 150mm</td>
+  <td class="num">30</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50341" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">180,60</td>
+  <td class="col-venta num">271,59</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50414</td>
+  <td class="nombre">3M DISCO TRIZACT ABRASIVO DE ACABADO, P3000</td>
+  <td class="num">30</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50414" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">219,60</td>
+  <td class="col-venta num">213,24</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN51130</td>
+  <td class="nombre">3M DISCO TRIZACT ABRASIVO DE ACABADO, P6000</td>
+  <td class="num">15</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN51130" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">97,38</td>
+  <td class="col-venta num">80,18</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN09253</td>
+  <td class="nombre">3M DISCOS HOOKIT P150 S/A 288U 150MM</td>
+  <td class="num">1.500</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN09253" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">663</td>
+  <td class="col-venta num">667,50</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN02048</td>
+  <td class="nombre">3M HOJA ABRASIVA WETORDRY P1500</td>
+  <td class="num">150</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN02048" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">144,20</td>
+  <td class="col-venta num">126,20</td>
+  <td class="col-partidas partidas">1.001.005, 1.018</td>
+  <td class="periodo">25/11/2025 → 29/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN02049</td>
+  <td class="nombre">3M HOJA ABRASIVA WETORDRY P2000 (caja 50uds)</td>
+  <td class="num">150</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN02049" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">141,75</td>
+  <td class="col-venta num">124,50</td>
+  <td class="col-partidas partidas">1.001.005, 1.018</td>
+  <td class="periodo">25/11/2025 → 29/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN01973</td>
+  <td class="nombre">3M HOJA DE PAPEL ABRASIVO WETORDRY 734, P600,</td>
+  <td class="num">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN01973" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">25,35</td>
+  <td class="col-venta num">25,35</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN01972</td>
+  <td class="nombre">3M HOJA DE PAPEL ABRASIVO WETORDRY 734, P800</td>
+  <td class="num">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN01972" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">26,68</td>
+  <td class="col-venta num">26,68</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">7000119587</td>
+  <td class="nombre">3M HOOKIT DISCO DE PAPEL 236U P400 C-WEIGHT, 6 IN X NH, DIE 600Z, 50/PAC, 250EA/CASE</td>
+  <td class="num">1.500</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="7000119587" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">663</td>
+  <td class="col-venta num">660</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">AB55592</td>
+  <td class="nombre">3M HOOKIT DISCO DE PAPEL 236U, P180 C-WEIGHT, 6in x NH, DIE 600Z, 50/CARTON, 250</td>
+  <td class="num">500</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="AB55592" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">221,50</td>
+  <td class="col-venta num">221,50</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025 → 13/02/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">AB55588</td>
+  <td class="nombre">3M HOOKIT DISCO DE PAPEL 236U, P80 C-WEIGHT, 6 in X NH, DIE 600Z, 50/PAC, 250</td>
+  <td class="num">1.000</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="AB55588" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">443</td>
+  <td class="col-venta num">443</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">AB55590</td>
+  <td class="nombre">3M HOOKIT PAPER DISC 236U, P120 C-WEIGHT, 6 IN X NH, DIE 600Z</td>
+  <td class="num">800</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="AB55590" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">354,40</td>
+  <td class="col-venta num">354,40</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50335</td>
+  <td class="nombre">3M ROLLO ABRASIVO C/ESPONJA P320,114mmX25m (X METRO)</td>
+  <td class="num">125</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50335" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">189,55</td>
+  <td class="col-venta num">177</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50337</td>
+  <td class="nombre">3M ROLLO ABRASIVO C/ESPONJA P400, 114mmX25m (x metro)</td>
+  <td class="num">332</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50337" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">550,33</td>
+  <td class="col-venta num">551,45</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 11/05/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN61079</td>
+  <td class="nombre">3M ROLLO ABRASIVO P120, HOOKIT 255P, 115mmX25m</td>
+  <td class="num">50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN61079" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">119,95</td>
+  <td class="col-venta num">100</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN61077</td>
+  <td class="nombre">3M ROLLO ABRASIVO P180, 255P, HOOKIT 115MMX25M</td>
+  <td class="num">75</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN61077" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">179,93</td>
+  <td class="col-venta num">149,85</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025 → 02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN61083</td>
+  <td class="nombre">3M ROLLO ABRASIVO P40, HOOKIT, 245P, 115mmx25m</td>
+  <td class="num">50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN61083" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">133</td>
+  <td class="col-venta num">133</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50338</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO C/ESPONJA 216U, P500</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50338" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">3,45</td>
+  <td class="col-venta num">3,45</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">11/05/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN44398</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO, P120, 288U, 115mmX50m</td>
+  <td class="num">150</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN44398" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">157,35</td>
+  <td class="col-venta num">63</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN44396</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO, P180, 288U, 115mmX50m</td>
+  <td class="num">302</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN44396" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">316,80</td>
+  <td class="col-venta num">316,80</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 03/03/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN44393</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO, P320, 288U</td>
+  <td class="num">50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN44393" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">52,40</td>
+  <td class="col-venta num">52,40</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN04545</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO, P400, 255P 115mmX50m</td>
+  <td class="num">102</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN04545" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">106,85</td>
+  <td class="col-venta num">106,85</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">02/12/2025 → 18/02/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN44400</td>
+  <td class="nombre">3M ROLLO PAPEL ABRASIVO, P80, 288U (115mmx50m)</td>
+  <td class="num">150</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN44400" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">157,20</td>
+  <td class="col-venta num">157,20</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">AVFDF</td>
+  <td class="nombre">3M SCOTCH-BRITE ROJO DURABLE FLEX MX-HP A VFN</td>
+  <td class="num">21</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="AVFDF" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">20,46</td>
+  <td class="col-venta num">20,46</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">18/02/2026 → 07/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">DREBABAR</td>
+  <td class="nombre">AIXIA DISCO REBABAR 60X4X10 UND</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="DREBABAR" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">34,59</td>
+  <td class="col-venta num">34,59</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">19/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="MIRKA">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">MIRKA</td>
+  <td class="cod">108/AE24105051</td>
+  <td class="nombre">DISCO ABRANET AUTONET P500 150MM</td>
+  <td class="num">500</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="108/AE24105051" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">450,50</td>
+  <td class="col-venta num">450,50</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="FESTOOL">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">FESTOOL</td>
+  <td class="cod">29/496647</td>
+  <td class="nombre">FESTOOL INTERFACE-PAD 10mm (PA)</td>
+  <td class="num">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="29/496647" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">70,44</td>
+  <td class="col-venta num">88,10</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 07/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">6661</td>
+  <td class="nombre">FRESA 20X25</td>
+  <td class="num">15</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6661" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">44,64</td>
+  <td class="col-venta num">44,64</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">6660</td>
+  <td class="nombre">FRESAS 13X20</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6660" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">21,53</td>
+  <td class="col-venta num">21,53</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="MIRKA">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">MIRKA</td>
+  <td class="cod">LIMP</td>
+  <td class="nombre">P80 - MIRKA ABRASIVO GOLD 200MM 9A P80</td>
+  <td class="num">600</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="LIMP" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">478,40</td>
+  <td class="col-venta num">635,20</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">067203080</td>
+  <td class="nombre">RODILLO ABRASIVO LAM. VASTAGO 30X15 P-80</td>
+  <td class="num">7</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="067203080" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">11,28</td>
+  <td class="col-venta num">11,23</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025 → 02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">067203060</td>
+  <td class="nombre">RODILLO ABRASIVO LAM.VASTAGO 30X15 P-60</td>
+  <td class="num">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="067203060" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">6,92</td>
+  <td class="col-venta num">6,92</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">067204060</td>
+  <td class="nombre">RODILLO ABRASIVO LAM.VASTAGO 40X20 P-60</td>
+  <td class="num">7</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="067204060" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">13,10</td>
+  <td class="col-venta num">13,10</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025 → 02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">067204080</td>
+  <td class="nombre">RODILLO ABRASIVO LAM.VASTAGO 40X20 P-80</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="067204080" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">3,41</td>
+  <td class="col-venta num">3,41</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">067206060</td>
+  <td class="nombre">RODILLO ABRASIVO LAM.VASTAGO 60X30 P-60</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="067206060" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">4,78</td>
+  <td class="col-venta num">4,78</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">067206080</td>
+  <td class="nombre">RODILLO ABRASIVO LAM.VASTAGO 60X30 P-80</td>
+  <td class="num">7</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="067206080" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">16,88</td>
+  <td class="col-venta num">16,88</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025 → 02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="3M">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN07447</td>
+  <td class="nombre">SCOTCH BRITE PLIEGO 7447 158MMX224MM</td>
+  <td class="num">180</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN07447" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">216</td>
+  <td class="col-venta num">218,16</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">17/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="SMIRDEX">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">SMIRDEX</td>
+  <td class="cod">820412080</td>
+  <td class="nombre">SMIRDEX 820 ROLLO LIJA P80 115MM (XMETRO)</td>
+  <td class="num">75</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="820412080" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">64,86</td>
+  <td class="col-venta num">64,88</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="—">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">—</td>
+  <td class="cod">006144</td>
+  <td class="nombre">TACO DE CORCHO PARA LIJAR</td>
+  <td class="num">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="006144" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">25,18</td>
+  <td class="col-venta num">25,18</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="TYROLIT">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">TYROLIT</td>
+  <td class="cod">890652</td>
+  <td class="nombre">TYROLIT CEPILLO 52P DZ DE ALAMBRE PINCEL</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="890652" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">12,64</td>
+  <td class="col-venta num">12,64</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">01/04/2026</td>
+</tr>
+<tr data-fam="LIJA" data-marca="TYROLIT">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">TYROLIT</td>
+  <td class="cod">890653</td>
+  <td class="nombre">TYROLIT CEPILLO ALAMBRE PINCEL 22x28 - 6x68mm</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="890653" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">143,53</td>
+  <td class="col-venta num">143,53</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="TYROLIT">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">TYROLIT</td>
+  <td class="cod">706024</td>
+  <td class="nombre">TYROLIT DISCO FIBRA 115X22 P24</td>
+  <td class="num">125</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="706024" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">53</td>
+  <td class="col-venta num">48</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="TYROLIT">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">TYROLIT</td>
+  <td class="cod">706025</td>
+  <td class="nombre">TYROLIT DISCO FIBRA 115X22 P36</td>
+  <td class="num">125</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="706025" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">64,75</td>
+  <td class="col-venta num">64,75</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIJA" data-marca="TYROLIT">
+  <td style="background:#FFF9C4;color:#827717;font-weight:700">LIJA</td>
+  <td class="marca">TYROLIT</td>
+  <td class="cod">P16</td>
+  <td class="nombre">TYROLIT DISCO FIBRA GRANO 16</td>
+  <td class="num">175</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="P16" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">284,71</td>
+  <td class="col-venta num">230,58</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">25/11/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="3M">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN08984</td>
+  <td class="nombre">3M LIMPIADOR DE ADHESIVOS DE USO GENERAL 1L</td>
+  <td class="num">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN08984" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">116,11</td>
+  <td class="col-venta num">116,23</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">10/12/2025 → 12/02/2026</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="3M">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN09660</td>
+  <td class="nombre">3M PAÑO ANTIESTATICO BLANCO, 320MMX400MM (UD)</td>
+  <td class="num">102</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN09660" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">222,26</td>
+  <td class="col-venta num">222,26</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 20/04/2026</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">010072</td>
+  <td class="nombre">ALCOHOL 96º 1 L</td>
+  <td class="num">33</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="010072" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">69,81</td>
+  <td class="col-venta num">59,26</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006</td>
+  <td class="periodo">25/11/2025 → 19/02/2026</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="SONTARA">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">SONTARA</td>
+  <td class="cod">01/4542</td>
+  <td class="nombre">BAYETA DESENGRASANTE SONTARA PAQ. 200 UDS (PA)</td>
+  <td class="num">200</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="01/4542" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">71,68</td>
+  <td class="col-venta num">99,20</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="ZVG">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">ZVG</td>
+  <td class="cod">1029101</td>
+  <td class="nombre">BAYETA MICROFIBRA AZUL 40X40CM ZVG</td>
+  <td class="num">100</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="1029101" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">94,10</td>
+  <td class="col-venta num">112,70</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="ZVG">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">ZVG</td>
+  <td class="cod">10294</td>
+  <td class="nombre">BAYETA MICROFIBRA ROSA ZVG</td>
+  <td class="num">60</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="10294" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">56,46</td>
+  <td class="col-venta num">56,46</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="ZVG">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">ZVG</td>
+  <td class="cod">1029301</td>
+  <td class="nombre">BAYETA MICROFIBRA VERDE ZVG</td>
+  <td class="num">95</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="1029301" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">89,38</td>
+  <td class="col-venta num">89,38</td>
+  <td class="col-partidas partidas">1.001.005, 1.018, 2.065</td>
+  <td class="periodo">25/11/2025 → 11/05/2026</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">2014085</td>
+  <td class="nombre">BOLSA BASURA NEGRA 100X125CM (rollo 10 uds/caja 15)</td>
+  <td class="num">54</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="2014085" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">192,51</td>
+  <td class="col-venta num">192,51</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 1.003.004</td>
+  <td class="periodo">25/11/2025 → 20/03/2026</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">34008</td>
+  <td class="nombre">CUBO AZUL 13 L./BLUE BUCKET 13 L.</td>
+  <td class="num">80</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="34008" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">125,06</td>
+  <td class="col-venta num">125,06</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004, 2.065</td>
+  <td class="periodo">25/11/2025 → 07/04/2026</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">10750</td>
+  <td class="nombre">ESPATULAS DE CARROCERO INOX SET 4UDS (NAUTI</td>
+  <td class="num">9</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="10750" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">34,35</td>
+  <td class="col-venta num">33,65</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">38109</td>
+  <td class="nombre">ESPONJA NATURAL PORO GRUESO 150X100X55</td>
+  <td class="num">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="38109" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">16,12</td>
+  <td class="col-venta num">16,12</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">57200</td>
+  <td class="nombre">LAPIZ CARPINTERO 180 MM (NAUTI CHANDLER)</td>
+  <td class="num">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="57200" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">8,70</td>
+  <td class="col-venta num">8,70</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">051020</td>
+  <td class="nombre">NAUTI CLEANER 5L (LITROS) (NAUTI CHANDLER)</td>
+  <td class="num">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="051020" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">96,91</td>
+  <td class="col-venta num">97,21</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">00002</td>
+  <td class="nombre">PAPEL DE SECAR (BOBINA MEDIANA)</td>
+  <td class="num">12</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="00002" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">39,95</td>
+  <td class="col-venta num">60,02</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="—">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">—</td>
+  <td class="cod">34102</td>
+  <td class="nombre">RECOGEDOR BASURA</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="34102" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">7,73</td>
+  <td class="col-venta num">7,73</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="SIFA">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">SIFA</td>
+  <td class="cod">002785</td>
+  <td class="nombre">SIFA TRAPO BLANCO ALGODON (SABANA) CAJA 10 KG</td>
+  <td class="num">100,40</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="002785" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">370,44</td>
+  <td class="col-venta num">370,44</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004, 2.065</td>
+  <td class="periodo">27/11/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="STAR BRITE">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">STAR BRITE</td>
+  <td class="cod">STA40076</td>
+  <td class="nombre">STAR BRITE ESPONJA DE ACHIQUE EN CELULOSA</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="STA40076" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">60,88</td>
+  <td class="col-venta num">60,88</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="STAR BRITE">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">STAR BRITE</td>
+  <td class="cod">STA40074</td>
+  <td class="nombre">STAR BRITE ESPONJA HUESO CELULOSA</td>
+  <td class="num">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="STA40074" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">42,66</td>
+  <td class="col-venta num">51,11</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="WURTH">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">0695770002</td>
+  <td class="nombre">WURTH CUBO MICROABSORBER 25L</td>
+  <td class="num">30</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0695770002" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">282,90</td>
+  <td class="col-venta num">577,89</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">11/12/2025</td>
+</tr>
+<tr data-fam="LIMPIEZA" data-marca="WURTH">
+  <td style="background:#E0F2F1;color:#004D40;font-weight:700">LIMPIEZA</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">089090090</td>
+  <td class="nombre">WURTH PAÑOS LIMPIAMANOS INTENSIVOS (90uds)</td>
+  <td class="num">540</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="089090090" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">290,14</td>
+  <td class="col-venta num">290,52</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">11/12/2025</td>
+</tr>
+<tr data-fam="MAQUINARIA" data-marca="—">
+  <td style="background:#ECEFF1;color:#37474F;font-weight:700">MAQUINARIA</td>
+  <td class="marca">—</td>
+  <td class="cod">07146910</td>
+  <td class="nombre">CEPILLO CIRCULAR CON MANGO 40MM</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="07146910" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">12,64</td>
+  <td class="col-venta num">12,64</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="MAQUINARIA" data-marca="—">
+  <td style="background:#ECEFF1;color:#37474F;font-weight:700">MAQUINARIA</td>
+  <td class="marca">—</td>
+  <td class="cod">07146911</td>
+  <td class="nombre">CEPILLO CIRCULAR CON MANGO 60MM</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="07146911" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">11,48</td>
+  <td class="col-venta num">11,48</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="MAQUINARIA" data-marca="—">
+  <td style="background:#ECEFF1;color:#37474F;font-weight:700">MAQUINARIA</td>
+  <td class="marca">—</td>
+  <td class="cod">ESCALERA1</td>
+  <td class="nombre">ESCALERA GRANDE</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="ESCALERA1" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">114,49</td>
+  <td class="col-venta num">123,08</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">18/11/2025</td>
+</tr>
+<tr data-fam="MAQUINARIA" data-marca="—">
+  <td style="background:#ECEFF1;color:#37474F;font-weight:700">MAQUINARIA</td>
+  <td class="marca">—</td>
+  <td class="cod">1700240</td>
+  <td class="nombre">PALO MADERA FORRADO PLAST 140CM</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="1700240" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">7,24</td>
+  <td class="col-venta num">6,78</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="MAQUINARIA" data-marca="SHURHOLD">
+  <td style="background:#ECEFF1;color:#37474F;font-weight:700">MAQUINARIA</td>
+  <td class="marca">SHURHOLD</td>
+  <td class="cod">SHU760</td>
+  <td class="nombre">SHURHOLD 760 PALO FIJO 152CM (60&quot;)</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="SHU760" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">29,39</td>
+  <td class="col-venta num">29,39</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="MAQUINARIA" data-marca="SHURHOLD">
+  <td style="background:#ECEFF1;color:#37474F;font-weight:700">MAQUINARIA</td>
+  <td class="marca">SHURHOLD</td>
+  <td class="cod">10250176</td>
+  <td class="nombre">SHURHOLD 955 CEPILLO AMARILLO MEDIO 15CM (6&quot;)</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="10250176" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">40,44</td>
+  <td class="col-venta num">58,35</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="MAQUINARIA" data-marca="WURTH">
+  <td style="background:#ECEFF1;color:#37474F;font-weight:700">MAQUINARIA</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">07156627</td>
+  <td class="nombre">WURTH CUTTER PROFESIONAL 2C 18MM</td>
+  <td class="num">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="07156627" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">100,88</td>
+  <td class="col-venta num">100,88</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="MASILLAS" data-marca="—">
+  <td style="background:#FCE4EC;color:#880E4F;font-weight:700">MASILLAS</td>
+  <td class="marca">—</td>
+  <td class="cod">003314</td>
+  <td class="nombre">EPIFANES MASILLA FIBRA VIDRIO POLYESTER 1,5KG</td>
+  <td class="num">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="003314" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">164,63</td>
+  <td class="col-venta num">188,79</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 11/05/2026</td>
+</tr>
+<tr data-fam="MASILLAS" data-marca="WEST SYSTEM">
+  <td style="background:#FCE4EC;color:#880E4F;font-weight:700">MASILLAS</td>
+  <td class="marca">WEST SYSTEM</td>
+  <td class="cod">002136</td>
+  <td class="nombre">WEST SYSTEM 407 LOW DENSITY FILLER 150G</td>
+  <td class="num">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="002136" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">17,15</td>
+  <td class="col-venta num">17,18</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">18/12/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C3034</td>
+  <td class="nombre">1/2GA - ALEXSEAL C3034 FINE FILLER 303 CONVERTER 1/2 GAL</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C3034" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">174,72</td>
+  <td class="col-venta num">336</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C5120</td>
+  <td class="nombre">1/2GA - ALEXSEAL C5120 ACRYLIC TOPCOAT X CONVERTER SPRAY 1/2GAL</td>
+  <td class="num">52</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C5120" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">4.836</td>
+  <td class="col-venta num">4.836</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">16/03/2026 → 23/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C2017</td>
+  <td class="nombre">2GA - ALEXSEAL C2017 FAIRING COMPOUND 202 FAST RED</td>
+  <td class="num">18,05</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C2017" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.818,64</td>
+  <td class="col-venta num">5.067,87</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 23/03/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C2075</td>
+  <td class="nombre">2GA - ALEXSEAL C2075 FAIRING COMPOUND 202 STANDAR</td>
+  <td class="num">18</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C2075" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.538</td>
+  <td class="col-venta num">1.814,71</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">05/12/2025 → 18/02/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">P2094</td>
+  <td class="nombre">2GA - ALEXSEAL P2094 FAIRING COMPOUND 202 BASE</td>
+  <td class="num">36,05</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="P2094" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">5.356,64</td>
+  <td class="col-venta num">10.230,68</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 23/03/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="3M">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN08080</td>
+  <td class="nombre">3M ADHESIVO CONTACTO EN AEROSOL 500ML PN08080</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN08080" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">113,47</td>
+  <td class="col-venta num">126,81</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">17/11/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="3M">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN80349</td>
+  <td class="nombre">3M COMPUESTO ABRILLANTADOR EXTRAFINO (AMARILLO) 1L</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN80349" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">80,70</td>
+  <td class="col-venta num">80,67</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="3M">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50487</td>
+  <td class="nombre">3M PERFECT IT BOINA PULIDO VERDE 150mm</td>
+  <td class="num">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50487" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">78,26</td>
+  <td class="col-venta num">77,10</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="3M">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN09378</td>
+  <td class="nombre">3M PERFECT-IT BOINA ABRILLANTADO ALTO BRILLO, NEGRO</td>
+  <td class="num">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN09378" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">64,63</td>
+  <td class="col-venta num">87,81</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="3M">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50383</td>
+  <td class="nombre">3M PERFECT-IT PULIMENTO ULTRAFINO SE 1LT</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50383" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">83,86</td>
+  <td class="col-venta num">83,86</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="3M">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN51815</td>
+  <td class="nombre">3M PULIMENTO 51815 PERFECT IT DEBASTADOR CORTE RÁPIDO</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN51815" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">82,66</td>
+  <td class="col-venta num">82,63</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="3M">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN09374</td>
+  <td class="nombre">3M PULIMENTO CORTE RAPIDO PERFECT-IT 09374 1LT</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN09374" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">70,44</td>
+  <td class="col-venta num">70,44</td>
+  <td class="col-partidas partidas">1.018</td>
+  <td class="periodo">29/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">T0006</td>
+  <td class="nombre">5LT - AWLGRIP T0006 EPOXY PRIMER REDUCER 5LT</td>
+  <td class="num">0,15</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="T0006" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">9,59</td>
+  <td class="col-venta num">16,41</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">23/03/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">A9049GA</td>
+  <td class="nombre">ALEXSEAL A9049 WIPE DOWN SOLVENT</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="A9049GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">196,56</td>
+  <td class="col-venta num">354</td>
+  <td class="col-partidas partidas">1.002.006</td>
+  <td class="periodo">14/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C5120PINT</td>
+  <td class="nombre">ALEXSEAL ACRYLIC TOPCOAT X CONVERTER SPRAY C5120 PINTA</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C5120PINT" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">68</td>
+  <td class="col-venta num">68</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">16/04/2026 → 27/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C1617QT</td>
+  <td class="nombre">ALEXSEAL C1617 PROTECTIVE PRIMER 161</td>
+  <td class="num">13,10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C1617QT" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">222,70</td>
+  <td class="col-venta num">428,28</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">17/11/2025 → 16/03/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C3052GA</td>
+  <td class="nombre">ALEXSEAL C3052 SUPER BUILD 302 CONVERTER</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C3052GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.025</td>
+  <td class="col-venta num">1.576,92</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">12/12/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C4427GA</td>
+  <td class="nombre">ALEXSEAL C4427 FINISH PRIMER 442 CONVERTER</td>
+  <td class="num">74,65</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C4427GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">7.346</td>
+  <td class="col-venta num">14.100,02</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 2.065</td>
+  <td class="periodo">13/01/2026 → 07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C5047QT</td>
+  <td class="nombre">ALEXSEAL C5047 HIGH SOLID BASE COAT QT</td>
+  <td class="num">35</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C5047QT" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.802,50</td>
+  <td class="col-venta num">3.050,76</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">26/01/2026 → 06/02/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C5051GA</td>
+  <td class="nombre">ALEXSEAL C5051 TOPCOAT CONVERTER SPRAY</td>
+  <td class="num">23</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C5051GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">4.301</td>
+  <td class="col-venta num">7.498,24</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">26/01/2026 → 18/02/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">C5067GA</td>
+  <td class="nombre">ALEXSEAL C5067 HIGH SOLID CLEAR COAT GAL</td>
+  <td class="num">14</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="C5067GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.926</td>
+  <td class="col-venta num">5.487,08</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">26/01/2026 → 29/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">T0125GA</td>
+  <td class="nombre">ALEXSEAL CLEAR GLOSS T0125 GAL</td>
+  <td class="num">11</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="T0125GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.002</td>
+  <td class="col-venta num">1.974</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">26/01/2026 → 29/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">H0150GA</td>
+  <td class="nombre">ALEXSEAL H0150 HIGH SOLID CLEAR GLOSS GAL</td>
+  <td class="num">14</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="H0150GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.926</td>
+  <td class="col-venta num">5.626,92</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">26/01/2026 → 10/02/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">H5153.75GA</td>
+  <td class="nombre">ALEXSEAL H5153 HIGH SOLID FLAG BLUE 0.75 GAL</td>
+  <td class="num">30</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="H5153.75GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">6.360</td>
+  <td class="col-venta num">7.035</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">29/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">H9123.75GA</td>
+  <td class="nombre">ALEXSEAL HIGH SOLID BASE COAT MATTERHORN WHITE 0.75 GAL</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="H9123.75GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">399</td>
+  <td class="col-venta num">399</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">29/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">H3153.75GA</td>
+  <td class="nombre">ALEXSEAL HIGH SOLID BASE COAT VIVIS RED 0.75 GAL</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="H3153.75GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">909</td>
+  <td class="col-venta num">909</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">29/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">P1610GA</td>
+  <td class="nombre">ALEXSEAL P1610 PROTECTIVE PRIMER 161 9802</td>
+  <td class="num">13,10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="P1610GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.179</td>
+  <td class="col-venta num">2.267,32</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">17/11/2025 → 16/03/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">P3002GA</td>
+  <td class="nombre">ALEXSEAL P3002 SUPER BUILD 302 9802 WHITE</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="P3002GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.025</td>
+  <td class="col-venta num">1.576,92</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">12/12/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">P3033GA</td>
+  <td class="nombre">ALEXSEAL P3033 FINE FILLER 303 7833 LIGHT GREY (GAL)</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="P3033GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">349,44</td>
+  <td class="col-venta num">672</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">P4420GA</td>
+  <td class="nombre">ALEXSEAL P4420 FINISH PRIMER 442 9806 WHITE</td>
+  <td class="num">43,65</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="P4420GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">4.315,32</td>
+  <td class="col-venta num">8.288,08</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 2.065</td>
+  <td class="periodo">13/01/2026 → 07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">P4423GA</td>
+  <td class="nombre">ALEXSEAL P4423 FINISH PRIMER 442 7837 DARK GREY</td>
+  <td class="num">28</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="P4423GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.740,50</td>
+  <td class="col-venta num">5.270,20</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 2.065</td>
+  <td class="periodo">14/01/2026 → 07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R3040GA</td>
+  <td class="nombre">ALEXSEAL R3040 HIGH BUILD EPOXY REDUCER GAL</td>
+  <td class="num">8</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R3040GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">332,80</td>
+  <td class="col-venta num">640</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R4042GA</td>
+  <td class="nombre">ALEXSEAL R4042 EPOXY PRIMER REDUCER GAL</td>
+  <td class="num">33,20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R4042GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.400,82</td>
+  <td class="col-venta num">2.679,93</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 2.065</td>
+  <td class="periodo">25/11/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R5030GA</td>
+  <td class="nombre">ALEXSEAL R5030 REDUCER SLOW GAL</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R5030GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">113,10</td>
+  <td class="col-venta num">128,49</td>
+  <td class="col-partidas partidas">1.002.006</td>
+  <td class="periodo">14/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R5050GA</td>
+  <td class="nombre">ALEXSEAL R5050 TOPCOAT REDUCER MEDIUM</td>
+  <td class="num">16</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R5050GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">720</td>
+  <td class="col-venta num">780</td>
+  <td class="col-partidas partidas">1.002.006</td>
+  <td class="periodo">14/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R5101GA</td>
+  <td class="nombre">ALEXSEAL R5101 ACRYLIC TOPCOAT REDUCER STANDAR GAL</td>
+  <td class="num">45</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R5101GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.092,50</td>
+  <td class="col-venta num">2.092,50</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">16/03/2026 → 27/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R5103GA</td>
+  <td class="nombre">ALEXSEAL R5103 ACRYLIC TOPCOAT REDUCER HOT #3 GAL</td>
+  <td class="num">13</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R5103GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">604,50</td>
+  <td class="col-venta num">604,50</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">16/03/2026 → 16/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R5541QT</td>
+  <td class="nombre">ALEXSEAL R5541 HS BASE COAT ACTIVATOR QT</td>
+  <td class="num">35</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R5541QT" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.190</td>
+  <td class="col-venta num">2.044,88</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">26/01/2026 → 29/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">R5561GA</td>
+  <td class="nombre">ALEXSEAL R5561 HIGH SOLID CLEAR COAT GAL</td>
+  <td class="num">14</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="R5561GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.022</td>
+  <td class="col-venta num">1.910,62</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">26/01/2026 → 06/02/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">X9123GA</td>
+  <td class="nombre">ALEXSEAL X9123 ACRYLIC TOPCOAT X MATTERHORN WHITE GAL</td>
+  <td class="num">34</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="X9123GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">6.800</td>
+  <td class="col-venta num">6.800</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">16/03/2026 → 24/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">X9123QT</td>
+  <td class="nombre">ALEXSEAL X9123 ACRYLIC TOPCOAT X MATTERHORN WHITE QT</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="X9123QT" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">640</td>
+  <td class="col-venta num">640</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">16/04/2026 → 24/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="ALEXSEAL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">ALEXSEAL</td>
+  <td class="cod">X9232GA</td>
+  <td class="nombre">ALEXSEAL X9232 ACRYLIC TOPCOAT X SUPER JET BLACK GAL</td>
+  <td class="num">16</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="X9232GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">3.288</td>
+  <td class="col-venta num">3.288</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">16/03/2026 → 16/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">73012QT</td>
+  <td class="nombre">AWLGRIP 73012 ANTIDESLIZANTE GRIPTEX FINE QT</td>
+  <td class="num">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="73012QT" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">177,35</td>
+  <td class="col-venta num">354,48</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">73013QT</td>
+  <td class="nombre">AWLGRIP 73013 ANTIDESLIZANTE GRIPTEX COARSE QT</td>
+  <td class="num">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="73013QT" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">188,93</td>
+  <td class="col-venta num">222,24</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">A1801</td>
+  <td class="nombre">AWLGRIP A1801 AEROWAVE FILLER 2501 290ML BASE</td>
+  <td class="num">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="A1801" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">188,92</td>
+  <td class="col-venta num">367,26</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">A1802</td>
+  <td class="nombre">AWLGRIP A1802 AEROWAVE CURING SOLUTION 6009</td>
+  <td class="num">4</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="A1802" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">188,92</td>
+  <td class="col-venta num">367,26</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">02/12/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">D1001GA</td>
+  <td class="nombre">AWLGRIP D1001 545 EPOXY PRIMER GRAY BASE GAL</td>
+  <td class="num">4,65</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D1001GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">541,65</td>
+  <td class="col-venta num">491,32</td>
+  <td class="col-partidas partidas">1.002.006, 2.065</td>
+  <td class="periodo">13/01/2026 → 07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">D3001GA</td>
+  <td class="nombre">AWLGRIP D3001 545 EPOXY PRIMER CONVERTER GA</td>
+  <td class="num">5,25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D3001GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">661,45</td>
+  <td class="col-venta num">606,85</td>
+  <td class="col-partidas partidas">1.002.006, 2.065</td>
+  <td class="periodo">21/01/2026 → 07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">D3002GA</td>
+  <td class="nombre">AWLGRIP D3002 HIGH BUILD CONVERTER GA</td>
+  <td class="num">0,35</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D3002GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">44,69</td>
+  <td class="col-venta num">42,56</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">D3730QT</td>
+  <td class="nombre">AWLGRIP D3730 HULLGARD EXTRA EPOXY PRIMER CATALIZADOR QT</td>
+  <td class="num">0,25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D3730QT" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">5,52</td>
+  <td class="col-venta num">10,64</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">D6120GA</td>
+  <td class="nombre">AWLGRIP D6120 HULLGARD EXTRA EPOXY PRIMER BASE GAL</td>
+  <td class="num">0,25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D6120GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">25,05</td>
+  <td class="col-venta num">48,21</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">D8001GA</td>
+  <td class="nombre">AWLGRIP D8001 545 EPOXY PRIMER WHITE GAL</td>
+  <td class="num">0,70</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D8001GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">85,65</td>
+  <td class="col-venta num">145,62</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">23/03/2026 → 07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AWLGRIP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AWLGRIP</td>
+  <td class="cod">D8002GA</td>
+  <td class="nombre">AWLGRIP D8002 HIGH BUILD EPOXY PRIMER GA</td>
+  <td class="num">0,35</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D8002GA" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">45,45</td>
+  <td class="col-venta num">62,13</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AXALTA">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AXALTA</td>
+  <td class="cod">14/CM37</td>
+  <td class="nombre">AXALTA MONOCAPA MARINE G8003/F8024 MATTERHORN WHITE SATINADO 1LT</td>
+  <td class="num">3,40</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="14/CM37" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">271,78</td>
+  <td class="col-venta num">244,60</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">23/03/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="AXALTA">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">AXALTA</td>
+  <td class="cod">14/TH50</td>
+  <td class="nombre">AXALTA TH50 DISOLVENTE DIFUMINADO 1LT</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="14/TH50" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">79,47</td>
+  <td class="col-venta num">158,96</td>
+  <td class="col-partidas partidas">1.002.006</td>
+  <td class="periodo">19/02/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="BOERO">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">BOERO</td>
+  <td class="cod">63605125</td>
+  <td class="nombre">BOERO DELTA UC HB 2.5LT TWO-COMPONENT EPOXY</td>
+  <td class="num">0,40</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="63605125" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">18,04</td>
+  <td class="col-venta num">18,04</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">07/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="—">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">341</td>
+  <td class="nombre">CHC101 - PINTAUTO CHAPAS MUESTRA GRIS OSCURO</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="341" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">3,74</td>
+  <td class="col-venta num">5,18</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="HEMPEL">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">HEMPEL</td>
+  <td class="cod">0600113</td>
+  <td class="nombre">HEMPEL LIGHT PRIMER BLANCO 2.5LT</td>
+  <td class="num">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0600113" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">62,66</td>
+  <td class="col-venta num">62,66</td>
+  <td class="col-partidas partidas">1.002.006</td>
+  <td class="periodo">06/03/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="—">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">43406</td>
+  <td class="nombre">MEZCLADOR PINTURA HELICOIDAL 60X400MM (NCH)</td>
+  <td class="num">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="43406" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">49,70</td>
+  <td class="col-venta num">49,70</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="—">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">32112</td>
+  <td class="nombre">PAINT BRUSH NO. 12</td>
+  <td class="num">15</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="32112" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">3,60</td>
+  <td class="col-venta num">3,60</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">28/02/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="PYMA">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">PYMA</td>
+  <td class="cod">1027140</td>
+  <td class="nombre">PYMA ESPORTEC CLASSIC 002 NEGRO MATA 750ML</td>
+  <td class="num">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="1027140" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">11,25</td>
+  <td class="col-venta num">11,25</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">28/04/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="SOROMAP">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">SOROMAP</td>
+  <td class="cod">SOR140100</td>
+  <td class="nombre">RESINA POLIESTER + CATALIZADOR 750GR SOROMAP</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="SOR140100" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">12,09</td>
+  <td class="col-venta num">37,18</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">18/12/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="—">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">9444132</td>
+  <td class="nombre">SAFETYKLEEN DISOLVENTE PINTURA 25LT</td>
+  <td class="num">625</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="9444132" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1.393</td>
+  <td class="col-venta num">1.521,88</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">30/01/2026</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="WEST SYSTEM">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">WEST SYSTEM</td>
+  <td class="cod">002015</td>
+  <td class="nombre">WEST SYSTEM 105/205A RESINA S/NORMAL 1.2 KG</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="002015" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">71,17</td>
+  <td class="col-venta num">71,16</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">18/12/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="WEST SYSTEM">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">WEST SYSTEM</td>
+  <td class="cod">002115</td>
+  <td class="nombre">WEST SYSTEM 406 SILICA COLOIDAL 60 G</td>
+  <td class="num">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="002115" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">9,22</td>
+  <td class="col-venta num">15,79</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">18/12/2025</td>
+</tr>
+<tr data-fam="PINTURAS" data-marca="WURTH">
+  <td style="background:#E8F5E9;color:#1B5E20;font-weight:700">PINTURAS</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">0818000125</td>
+  <td class="nombre">WURTH PAINT MASCK EVO 1.20 - 22.5MT</td>
+  <td class="num">100</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0818000125" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">285</td>
+  <td class="col-venta num">285</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">11/12/2025</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="—">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">—</td>
+  <td class="cod">PF5722</td>
+  <td class="nombre">1 - FENDWRAP MARINE PROTECTION</td>
+  <td class="num">52</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PF5722" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2.779,08</td>
+  <td class="col-venta num">2.842,55</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">30/01/2026 → 01/04/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">2128</td>
+  <td class="nombre">3M FILTRO SOLDADURA MASCARA FFP2 R (caja 10pares)</td>
+  <td class="num">91</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="2128" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">700,18</td>
+  <td class="col-venta num">1.536,45</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 11/05/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">06942</td>
+  <td class="nombre">3M MASCARA C/FILTROS VAPORES Y PARTICULAS</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="06942" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">75,72</td>
+  <td class="col-venta num">75,72</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">6300</td>
+  <td class="nombre">3M MEDIA MASCARA REUTILIZABLE</td>
+  <td class="num">11</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6300" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">189,08</td>
+  <td class="col-venta num">189,09</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">10/12/2025 → 20/03/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">6200</td>
+  <td class="nombre">3M MEDIA MASCARA REUTILIZABLE, MEDIANA, 6200</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="6200" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">104,89</td>
+  <td class="col-venta num">104,89</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">28/02/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">D701</td>
+  <td class="nombre">3M SECURE CLICK RETENEDOR DE FILTRO PARA MEDIA MASCARA</td>
+  <td class="num">14</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="D701" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">29,37</td>
+  <td class="col-venta num">29,37</td>
+  <td class="col-partidas partidas">1.002.006, 1.003.004</td>
+  <td class="periodo">19/02/2026 → 24/04/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">FF</td>
+  <td class="nombre">802-M - 3M SECURE CLICK MASCARA COMPLETA REUTILIZABLE MEDIANA FF-802-M</td>
+  <td class="num">1</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="FF" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">208,86</td>
+  <td class="col-venta num">208,86</td>
+  <td class="col-partidas partidas">1.002.006</td>
+  <td class="periodo">19/02/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="—">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">—</td>
+  <td class="cod">20007740</td>
+  <td class="nombre">FUNDA PARA CUBETA PLASTICO 18CM (E)</td>
+  <td class="num">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="20007740" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">12,94</td>
+  <td class="col-venta num">2,04</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">PNAT5X200G200U</td>
+  <td class="nombre">JUNPLAST PLÁSTICO NATURAL 5X200MT G/200</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PNAT5X200G200U" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">706,43</td>
+  <td class="col-venta num">706,43</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">PNAT6X60G600U</td>
+  <td class="nombre">JUNPLAST PLÁSTICO NATURAL 6X60MT G/600</td>
+  <td class="num">7</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PNAT6X60G600U" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">823,93</td>
+  <td class="col-venta num">823,47</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 09/03/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="3M">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">3M</td>
+  <td class="cod">COVER1</td>
+  <td class="nombre">LAMINA PROTECCION FR PROPLEX 3MMX1MX2M</td>
+  <td class="num">50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="COVER1" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">275,30</td>
+  <td class="col-venta num">283,80</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="—">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">—</td>
+  <td class="cod">2590</td>
+  <td class="nombre">ROLLO KRAFT PAPE 50GRL BEIGE 150MMX45MTS 50 GR</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="2590" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">14,10</td>
+  <td class="col-venta num">14,10</td>
+  <td class="col-partidas partidas">2.065</td>
+  <td class="periodo">03/03/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="SIFA">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">SIFA</td>
+  <td class="cod">000950</td>
+  <td class="nombre">SIFA GRANADA 10X10</td>
+  <td class="num">70</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="000950" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">133</td>
+  <td class="col-venta num">133</td>
+  <td class="col-partidas partidas">1.001.005, 1.003.004</td>
+  <td class="periodo">27/11/2025 → 01/04/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="WURTH">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">0818000180</td>
+  <td class="nombre">WURTH PAINT-MASK-EVO-A180CM-L22.5MT</td>
+  <td class="num">124</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0818000180" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">471,96</td>
+  <td class="col-venta num">408,49</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">11/12/2025 → 07/04/2026</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="WURTH">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">0818000261</td>
+  <td class="nombre">WURTH PAINT-MASK-EVO-A260CM-L22.5MT</td>
+  <td class="num">120</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0818000261" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">586,80</td>
+  <td class="col-venta num">418,32</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">11/12/2025</td>
+</tr>
+<tr data-fam="TAPADO" data-marca="WURTH">
+  <td style="background:#EDE7F6;color:#311B92;font-weight:700">TAPADO</td>
+  <td class="marca">WURTH</td>
+  <td class="cod">0818000035</td>
+  <td class="nombre">WURTH PAINT-MASK-EVO-A35CM-L22.5MT</td>
+  <td class="num">135</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="0818000035" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">234,90</td>
+  <td class="col-venta num">218,57</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">11/12/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN26026</td>
+  <td class="nombre">3M PPS SERIE 2.0 KIT, ESTANDAR, 650ml, 125UM</td>
+  <td class="num">0,50</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN26026" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">35,18</td>
+  <td class="col-venta num">35,18</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">20/03/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50404</td>
+  <td class="nombre">3M VASO DE MEZCLA, 1.550ml</td>
+  <td class="num">35</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50404" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">21,25</td>
+  <td class="col-venta num">21,25</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 20/04/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50405</td>
+  <td class="nombre">3M VASO DE MEZCLA, 2.300ml</td>
+  <td class="num">86</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50405" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">80,66</td>
+  <td class="col-venta num">80,69</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 27/04/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50402</td>
+  <td class="nombre">3M VASO DE MEZCLA, 365ml</td>
+  <td class="num">33</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50402" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">10,03</td>
+  <td class="col-venta num">10,03</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 07/04/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="3M">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">3M</td>
+  <td class="cod">PN50403</td>
+  <td class="nombre">3M VASO DE MEZCLA, 870ml</td>
+  <td class="num">31</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="PN50403" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">14,13</td>
+  <td class="col-venta num">14,06</td>
+  <td class="col-partidas partidas">1.001.005, 2.065</td>
+  <td class="periodo">25/11/2025 → 13/04/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">660BPF</td>
+  <td class="nombre">6 - PLANISI JERRICAN APILABLE 25L TAPON ROSCA D61</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="660BPF" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">16,45</td>
+  <td class="col-venta num">16,45</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="ANZA">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">ANZA</td>
+  <td class="cod">194135</td>
+  <td class="nombre">ANZA PRO SUPER SOFT FLAT BRUSH ERGO 35MM</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="194135" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">6,16</td>
+  <td class="col-venta num">6,16</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="ANZA">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">ANZA</td>
+  <td class="cod">194150</td>
+  <td class="nombre">ANZA PRO SUPER SOFT FLAT BRUSH ERGO 50MM</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="194150" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">8,21</td>
+  <td class="col-venta num">8,21</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">36302</td>
+  <td class="nombre">CEPILLO VENECIA</td>
+  <td class="num">3</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="36302" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">13,59</td>
+  <td class="col-venta num">13,04</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">040311</td>
+  <td class="nombre">DEPRESORES 100 U/CAJA (Precio unit)</td>
+  <td class="num">800</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="040311" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">19,44</td>
+  <td class="col-venta num">19,20</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">90813276</td>
+  <td class="nombre">EMBUDO ADAPTABLE MOTOR</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="90813276" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">5,76</td>
+  <td class="col-venta num">5,76</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">33326229</td>
+  <td class="nombre">EURO CAJA NATURAL MOD 6420-N 34L 600X40X200MM</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="33326229" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">42,08</td>
+  <td class="col-venta num">52,62</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">24311</td>
+  <td class="nombre">MANGO RODILLO CORTO 11CM</td>
+  <td class="num">2</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="24311" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">1,76</td>
+  <td class="col-venta num">1,67</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">V</td>
+  <td class="nombre">MIDI ANTIGOTA 30</td>
+  <td class="num">32</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="V" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">227,85</td>
+  <td class="col-venta num">65.371,43</td>
+  <td class="col-partidas partidas">1.003.004</td>
+  <td class="periodo">30/04/2026 → 07/05/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">19015012</td>
+  <td class="nombre">PALETINA DOBLE Nº12</td>
+  <td class="num">28</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="19015012" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">9,88</td>
+  <td class="col-venta num">9,88</td>
+  <td class="col-partidas partidas">1.001.005, 1.002.006, 2.065</td>
+  <td class="periodo">25/11/2025 → 13/04/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">19015015</td>
+  <td class="nombre">PALETINA DOBLE Nº15</td>
+  <td class="num">5</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="19015015" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">2,18</td>
+  <td class="col-venta num">3,31</td>
+  <td class="col-partidas partidas">1.002.006</td>
+  <td class="periodo">19/02/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">19015021</td>
+  <td class="nombre">PALETINA DOBLE Nº21</td>
+  <td class="num">6</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="19015021" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">3,67</td>
+  <td class="col-venta num">3,67</td>
+  <td class="col-partidas partidas">1.002.006, 2.065</td>
+  <td class="periodo">19/02/2026 → 23/03/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">14418</td>
+  <td class="nombre">PALETINA RADIADOR Nº18</td>
+  <td class="num">20</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="14418" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">35,06</td>
+  <td class="col-venta num">35,10</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">14421</td>
+  <td class="nombre">PALETINA RADIADOR Nº21</td>
+  <td class="num">25</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="14421" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">56,78</td>
+  <td class="col-venta num">56,78</td>
+  <td class="col-partidas partidas">1.002.006, 2.065</td>
+  <td class="periodo">19/02/2026 → 28/02/2026</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">20007608</td>
+  <td class="nombre">RODILLO ESPUMA MARRON 11 CM.</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="20007608" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">25,30</td>
+  <td class="col-venta num">25,30</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+<tr data-fam="UTILES PINTURAS" data-marca="—">
+  <td style="background:#FFF3E0;color:#BF360C;font-weight:700">UTILES PINTURAS</td>
+  <td class="marca">—</td>
+  <td class="cod">20007630</td>
+  <td class="nombre">RODILLO PELO CORTO 11CM</td>
+  <td class="num">10</td>
+  <td><input class="stock-input" type="number" min="0" placeholder="—" data-cod="20007630" oninput="saveRecuento('avalon',this)"></td>
+  <td class="col-coste num">7,30</td>
+  <td class="col-venta num">7,30</td>
+  <td class="col-partidas partidas">1.001.005</td>
+  <td class="periodo">25/11/2025</td>
+</tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ── PERSISTENCIA localStorage ───────────────────────────────────
+function saveRecuento(tabla, input) {
+  var cod = input.dataset.cod;
+  var val = input.value;
+  var key = 'recuento_' + tabla;
+  var data = JSON.parse(localStorage.getItem(key) || '{}');
+  if(val === '') delete data[cod];
+  else data[cod] = val;
+  localStorage.setItem(key, JSON.stringify(data));
+  var ind = document.getElementById('save-indicator-' + tabla);
+  if(ind) {
+    ind.textContent = '✓ Guardado';
+    ind.style.color = '#2E7D32';
+    setTimeout(function(){ ind.textContent = ''; }, 2000);
+  }
+}
+
+function loadRecuentos() {
+  ['denia','avalon'].forEach(function(tabla) {
+    var data = JSON.parse(localStorage.getItem('recuento_' + tabla) || '{}');
+    document.querySelectorAll('#tbl-' + tabla + ' input.stock-input').forEach(function(inp) {
+      var v = data[inp.dataset.cod];
+      if(v !== undefined) inp.value = v;
+    });
+  });
+}
+
+// ── EXPORTAR EXCEL ──────────────────────────────────────────────
+function exportExcel(tabla) {
+  var wb = XLSX.utils.book_new();
+
+  // Get headers
+  var ths = document.querySelectorAll('#tbl-' + tabla + ' thead th');
+  var headers = [];
+  ths.forEach(function(th){ headers.push(th.innerText.replace(/\n/g,' ').trim()); });
+
+  // Get rows
+  var rows = [headers];
+  document.querySelectorAll('#tbl-' + tabla + ' tbody tr').forEach(function(tr) {
+    var cells = [];
+    tr.querySelectorAll('td').forEach(function(td) {
+      var inp = td.querySelector('input');
+      if(inp) cells.push(inp.value === '' ? '' : parseFloat(inp.value) || inp.value);
+      else cells.push(td.innerText.trim());
+    });
+    rows.push(cells);
+  });
+
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column widths
+  ws['!cols'] = headers.map(function(h,i){
+    return { wch: i===3 ? 45 : i===7||i===8 ? 30 : 16 };
+  });
+
+  var sheetName = tabla === 'denia' ? 'Almacen Denia' : 'Proyecto Avalon';
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  var fecha = new Date().toLocaleDateString('es-ES').replace(/\//g,'-');
+  XLSX.writeFile(wb, 'Inventario_' + sheetName.replace(' ','_') + '_' + fecha + '.xlsx');
+}
+
+function showTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
+}
+
+function filterFam(tblId, fam, btn) {
+  var btns = btn.parentElement.querySelectorAll('.fbtn');
+  btns.forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  var rows = document.querySelectorAll('#tbl-'+tblId+' tbody tr');
+  rows.forEach(function(r){
+    if(fam==='ALL' || r.dataset.fam===fam) r.classList.remove('hidden');
+    else r.classList.add('hidden');
+  });
+}
+
+function filterSearch(tblId) {
+  var q = document.getElementById('search-'+tblId).value.toLowerCase();
+  var rows = document.querySelectorAll('#tbl-'+tblId+' tbody tr');
+  rows.forEach(function(r){
+    var txt = r.textContent.toLowerCase();
+    if(txt.includes(q)) r.classList.remove('hidden');
+    else r.classList.add('hidden');
+  });
+}
+
+function toggleCol(cls, btnId) {
+  var btn = document.getElementById(btnId);
+  var cells = document.querySelectorAll('.'+cls);
+  var isHidden = cells.length > 0 && cells[0].classList.contains('col-hidden');
+  cells.forEach(function(c){ 
+    if(isHidden) c.classList.remove('col-hidden');
+    else c.classList.add('col-hidden');
+  });
+  if(isHidden) btn.classList.remove('off');
+  else btn.classList.add('off');
+}
+
+// Load saved recuentos on page load
+window.addEventListener('load', loadRecuentos);
+</script>
+</body>
+</html>
