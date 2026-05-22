@@ -3910,31 +3910,183 @@ td.stock-updated{background:#E8F5E9!important;color:#1B5E20;font-weight:700;text
   </div>
 </div>
 
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
 <script>
-// ── PERSISTENCIA localStorage ───────────────────────────────────
-function saveRecuento(tabla, input) {
-  var cod = input.dataset.cod;
-  var val = input.value;
-  var key = 'recuento_' + tabla;
-  var data = JSON.parse(localStorage.getItem(key) || '{}');
-  if(val === '') delete data[cod];
-  else data[cod] = val;
-  localStorage.setItem(key, JSON.stringify(data));
-  var ind = document.getElementById('save-indicator-' + tabla);
-  if(ind) {
-    ind.textContent = '✓ Guardado';
-    ind.style.color = '#2E7D32';
-    setTimeout(function(){ ind.textContent = ''; }, 2000);
+// ── PERSISTENCIA Firestore + respaldo localStorage ───────────────────────────
+var firebaseConfig = {
+  apiKey: "AIzaSyC7_I9PSkvX0iWWV4NDQWHHW2WSNlsA3pg",
+  authDomain: "avalon-pruebas.firebaseapp.com",
+  projectId: "avalon-pruebas",
+  storageBucket: "avalon-pruebas.firebasestorage.app",
+  messagingSenderId: "299480644674",
+  appId: "1:299480644674:web:4f4639a921a0ebc3ba01db",
+  measurementId: "G-X0PJN00F1Y"
+};
+
+var db = null;
+var recuentosRef = null;
+var firestoreReady = false;
+var recuentosState = { denia: {}, avalon: {} };
+
+try {
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  recuentosRef = db.collection("inventarios").doc("denia-avalon");
+  firestoreReady = true;
+} catch (err) {
+  console.warn("Firebase no inicializado. Se usará solo localStorage.", err);
+}
+
+function safeKey(cod) {
+  return String(cod).replace(/\./g, "__DOT__").replace(/\//g, "__SLASH__");
+}
+
+function originalKey(key) {
+  return String(key).replace(/__SLASH__/g, "/").replace(/__DOT__/g, ".");
+}
+
+function setSaveIndicator(tabla, text, color) {
+  var ind = document.getElementById("save-indicator-" + tabla);
+  if (!ind) return;
+  ind.textContent = text;
+  ind.style.color = color || "#888";
+  if (text) setTimeout(function(){ ind.textContent = ""; }, 2500);
+}
+
+function getLocalData(tabla) {
+  try {
+    return JSON.parse(localStorage.getItem("recuento_" + tabla) || "{}");
+  } catch (err) {
+    return {};
   }
 }
 
-function loadRecuentos() {
-  ['denia','avalon'].forEach(function(tabla) {
-    var data = JSON.parse(localStorage.getItem('recuento_' + tabla) || '{}');
-    document.querySelectorAll('#tbl-' + tabla + ' input.stock-input').forEach(function(inp) {
-      var v = data[inp.dataset.cod];
-      if(v !== undefined) { inp.value = v; updateStock(tabla, inp); }
+function setLocalData(tabla, data) {
+  try {
+    localStorage.setItem("recuento_" + tabla, JSON.stringify(data || {}));
+  } catch (err) {
+    console.warn("No se pudo guardar localStorage", err);
+  }
+}
+
+function applyRecuentos(tabla, data) {
+  data = data || {};
+  document.querySelectorAll("#tbl-" + tabla + " input.stock-input").forEach(function(inp) {
+    var v = data[inp.dataset.cod];
+    if (v !== undefined && v !== null && v !== "") {
+      inp.value = v;
+    } else {
+      inp.value = "";
+    }
+    updateStock(tabla, inp);
+  });
+}
+
+function saveRecuento(tabla, input) {
+  var cod = input.dataset.cod;
+  var val = input.value;
+
+  if (!recuentosState[tabla]) recuentosState[tabla] = {};
+
+  if (val === "") delete recuentosState[tabla][cod];
+  else recuentosState[tabla][cod] = val;
+
+  setLocalData(tabla, recuentosState[tabla]);
+
+  if (!firestoreReady || !recuentosRef) {
+    setSaveIndicator(tabla, "✓ Guardado en este dispositivo", "#E65100");
+    return;
+  }
+
+  var safe = safeKey(cod);
+  var payload = {
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  payload["recuentos." + tabla + "." + safe] = val === "" ? firebase.firestore.FieldValue.delete() : val;
+  payload["keys." + tabla + "." + safe] = cod;
+
+  recuentosRef.set({ created: true }, { merge: true }).then(function() {
+    return recuentosRef.update(payload);
+  }).then(function() {
+    setSaveIndicator(tabla, "✓ Guardado online", "#2E7D32");
+  }).catch(function(err) {
+    console.error("Error guardando en Firestore:", err);
+    setSaveIndicator(tabla, "⚠ Guardado solo en este dispositivo", "#E65100");
+  });
+}
+
+function migrateLocalToFirestoreIfNeeded() {
+  if (!firestoreReady || !recuentosRef) return;
+
+  var localDenia = getLocalData("denia");
+  var localAvalon = getLocalData("avalon");
+  var hasLocal = Object.keys(localDenia).length || Object.keys(localAvalon).length;
+  if (!hasLocal) return;
+
+  recuentosRef.get().then(function(doc) {
+    var data = doc.exists ? (doc.data() || {}) : {};
+    var remote = data.recuentos || {};
+    var hasRemote = (remote.denia && Object.keys(remote.denia).length) || (remote.avalon && Object.keys(remote.avalon).length);
+    if (hasRemote) return;
+
+    var initial = { recuentos: { denia: {}, avalon: {} }, keys: { denia: {}, avalon: {} }, migratedAt: firebase.firestore.FieldValue.serverTimestamp() };
+
+    Object.keys(localDenia).forEach(function(cod) {
+      var safe = safeKey(cod);
+      initial.recuentos.denia[safe] = localDenia[cod];
+      initial.keys.denia[safe] = cod;
     });
+    Object.keys(localAvalon).forEach(function(cod) {
+      var safe = safeKey(cod);
+      initial.recuentos.avalon[safe] = localAvalon[cod];
+      initial.keys.avalon[safe] = cod;
+    });
+
+    return recuentosRef.set(initial, { merge: true });
+  }).catch(function(err) {
+    console.warn("No se pudo migrar localStorage a Firestore", err);
+  });
+}
+
+function loadRecuentos() {
+  ["denia","avalon"].forEach(function(tabla) {
+    recuentosState[tabla] = getLocalData(tabla);
+    applyRecuentos(tabla, recuentosState[tabla]);
+  });
+
+  migrateLocalToFirestoreIfNeeded();
+
+  if (!firestoreReady || !recuentosRef) return;
+
+  recuentosRef.onSnapshot(function(doc) {
+    if (!doc.exists) return;
+
+    var data = doc.data() || {};
+    var remote = data.recuentos || {};
+    var keys = data.keys || {};
+
+    ["denia","avalon"].forEach(function(tabla) {
+      var converted = {};
+      var remoteTabla = remote[tabla] || {};
+      var keysTabla = keys[tabla] || {};
+
+      Object.keys(remoteTabla).forEach(function(safe) {
+        var originalCode = keysTabla[safe] || originalKey(safe);
+        converted[originalCode] = remoteTabla[safe];
+      });
+
+      recuentosState[tabla] = converted;
+      setLocalData(tabla, converted);
+      applyRecuentos(tabla, converted);
+    });
+  }, function(err) {
+    console.error("Error leyendo Firestore:", err);
+    setSaveIndicator("denia", "⚠ Sin conexión online", "#E65100");
+    setSaveIndicator("avalon", "⚠ Sin conexión online", "#E65100");
   });
 }
 
@@ -4016,7 +4168,7 @@ function toggleCol(cls, btnId) {
 // Load saved recuentos on page load
 
 function updateStock(tabla, input) {
-  var cod = input.dataset.cod.replace(/[\/.]/g, '-');
+  var cod = input.dataset.cod.replace(/\//g,'-').replace(/\./g,'-');
   var recuento = input.value === '' ? null : parseFloat(input.value);
 
   if (tabla === 'denia') {
